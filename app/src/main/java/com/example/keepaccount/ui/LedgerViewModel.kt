@@ -1,0 +1,610 @@
+package com.example.keepaccount.ui
+
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.keepaccount.data.AppDatabase
+import com.example.keepaccount.data.BillRecordEntity
+import com.example.keepaccount.data.BillRepository
+import com.example.keepaccount.data.BillType
+import com.example.keepaccount.data.DefaultCategories
+import com.example.keepaccount.data.SeedDataFactory
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class LedgerViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = BillRepository(
+        AppDatabase.getInstance(application).billRecordDao(),
+    )
+    private val zoneId = ZoneId.systemDefault()
+    private val preferences = application.getSharedPreferences("keep_account_settings", Context.MODE_PRIVATE)
+    private var observeLedgerAllJob: Job? = null
+    private var observeStatisticsJob: Job? = null
+    private var observeStatisticsRangeJob: Job? = null
+
+    private val _uiState = MutableStateFlow(LedgerUiState())
+    val uiState: StateFlow<LedgerUiState> = _uiState.asStateFlow()
+
+    init {
+        seedDemoDataIfNeeded()
+        observeLedgerMonth()
+        observeStatisticsMonth()
+    }
+
+    fun selectTab(tab: AppTab) {
+        _uiState.update { it.copy(selectedTab = tab) }
+    }
+
+    fun showTypeFilter() {
+        _uiState.update { it.copy(isTypeFilterVisible = true) }
+    }
+
+    fun dismissTypeFilter() {
+        _uiState.update { it.copy(isTypeFilterVisible = false) }
+    }
+
+    fun selectCategoryFilter(category: String?) {
+        _uiState.update {
+            it.copy(
+                selectedCategory = category,
+                isTypeFilterVisible = false,
+            )
+        }
+        observeLedgerMonth()
+    }
+
+    fun showMonthPicker(target: MonthPickerTarget) {
+        _uiState.update {
+            it.copy(
+                monthPickerTarget = target,
+                tempYearMonth = when (target) {
+                    MonthPickerTarget.LEDGER -> it.selectedMonth
+                    MonthPickerTarget.STATISTICS -> it.statisticsMonth
+                },
+            )
+        }
+    }
+
+    fun dismissMonthPicker() {
+        _uiState.update { it.copy(monthPickerTarget = null) }
+    }
+
+    fun changeTempMonth(delta: Long) {
+        _uiState.update { it.copy(tempYearMonth = it.tempYearMonth.plusMonths(delta)) }
+    }
+
+    fun confirmMonthPicker() {
+        val state = _uiState.value
+        _uiState.update {
+            when (state.monthPickerTarget) {
+                MonthPickerTarget.LEDGER -> it.copy(
+                    selectedMonth = state.tempYearMonth,
+                    monthPickerTarget = null,
+                )
+
+                MonthPickerTarget.STATISTICS -> it.copy(
+                    statisticsMonth = state.tempYearMonth,
+                    monthPickerTarget = null,
+                )
+
+                null -> it.copy(monthPickerTarget = null)
+            }
+        }
+        when (state.monthPickerTarget) {
+            MonthPickerTarget.LEDGER -> observeLedgerMonth()
+            MonthPickerTarget.STATISTICS -> observeStatisticsMonth()
+            null -> Unit
+        }
+    }
+
+    fun openAddBill() {
+        _uiState.update {
+            val today = LocalDate.now()
+            val defaultDate = if (YearMonth.from(today) == it.selectedMonth) {
+                today
+            } else {
+                it.selectedMonth.atDay(1)
+            }
+            it.copy(
+                addBillState = AddBillState(
+                    date = defaultDate,
+                    calendarMonth = YearMonth.from(defaultDate),
+                ),
+            )
+        }
+    }
+
+    fun closeAddBill() {
+        _uiState.update { it.copy(addBillState = null) }
+    }
+
+    fun updateAddBillType(type: BillType) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            val defaultCategory = when (type) {
+                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense.first().name
+                BillType.INCOME -> DefaultCategories.income.first().name
+            }
+            state.copy(
+                addBillState = current.copy(
+                    type = type,
+                    category = defaultCategory,
+                ),
+            )
+        }
+    }
+
+    fun updateAddBillCategory(category: String) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(category = category))
+        }
+    }
+
+    fun appendAmountInput(value: String) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            val next = when {
+                value == "." && current.amountInput.contains(".") -> current.amountInput
+                value == "." && current.amountInput.isBlank() -> "0."
+                current.amountInput == "0" && value != "." -> value
+                current.amountInput.contains(".") &&
+                    current.amountInput.substringAfter(".").length >= 2 -> current.amountInput
+                current.amountInput.length >= 9 -> current.amountInput
+                else -> current.amountInput + value
+            }
+            state.copy(addBillState = current.copy(amountInput = next, errorMessage = null))
+        }
+    }
+
+    fun deleteAmountInput() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(
+                addBillState = current.copy(
+                    amountInput = current.amountInput.dropLast(1),
+                    errorMessage = null,
+                ),
+            )
+        }
+    }
+
+    fun showDatePicker() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(isDatePickerVisible = true))
+        }
+    }
+
+    fun dismissDatePicker() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(isDatePickerVisible = false))
+        }
+    }
+
+    fun changeAddBillMonth(delta: Long) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(calendarMonth = current.calendarMonth.plusMonths(delta)))
+        }
+    }
+
+    fun selectAddBillDate(date: LocalDate) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(
+                addBillState = current.copy(
+                    date = date,
+                    calendarMonth = YearMonth.from(date),
+                    isDatePickerVisible = false,
+                ),
+            )
+        }
+    }
+
+    fun showNoteEditor() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(isNoteEditorVisible = true, noteDraft = current.note))
+        }
+    }
+
+    fun updateNoteDraft(value: String) {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(noteDraft = value.take(30)))
+        }
+    }
+
+    fun confirmNote() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(
+                addBillState = current.copy(
+                    note = current.noteDraft,
+                    isNoteEditorVisible = false,
+                ),
+            )
+        }
+    }
+
+    fun dismissNoteEditor() {
+        _uiState.update { state ->
+            val current = state.addBillState ?: return@update state
+            state.copy(addBillState = current.copy(isNoteEditorVisible = false))
+        }
+    }
+
+    fun saveAddBill() {
+        val form = _uiState.value.addBillState ?: return
+        val amountCents = parseAmountCents(form.amountInput)
+        if (amountCents <= 0) {
+            _uiState.update { state ->
+                state.copy(addBillState = form.copy(errorMessage = "请输入有效金额"))
+            }
+            return
+        }
+        viewModelScope.launch {
+            val occurredAt = form.date
+                .atTime(LocalTime.now())
+                .atZone(zoneId)
+                .toInstant()
+                .toEpochMilli()
+            if (form.editingRecordId == null) {
+                repository.addRecord(
+                    type = form.type,
+                    category = form.category,
+                    amountCents = amountCents,
+                    note = form.note,
+                    occurredAt = occurredAt,
+                )
+            } else {
+                repository.updateRecord(
+                    BillRecordEntity(
+                        id = form.editingRecordId,
+                        type = form.type,
+                        category = form.category,
+                        amountCents = amountCents,
+                        note = form.note,
+                        occurredAt = occurredAt,
+                        createdAt = form.editingCreatedAt,
+                        updatedAt = System.currentTimeMillis(),
+                    ),
+                )
+            }
+            _uiState.update { it.copy(addBillState = null) }
+            refreshLedgerRecords()
+        }
+    }
+
+    fun switchStatisticsMode(type: BillType) {
+        _uiState.update { it.copy(statisticsMode = type) }
+    }
+
+    fun openCategoryDetail(category: String) {
+        _uiState.update {
+            it.copy(
+                selectedTab = AppTab.STATISTICS,
+                categoryDetail = CategoryDetailState(category = category),
+            )
+        }
+    }
+
+    fun closeCategoryDetail() {
+        _uiState.update { it.copy(categoryDetail = null) }
+    }
+
+    fun setCategoryDetailSort(sort: DetailSort) {
+        _uiState.update { state ->
+            val detail = state.categoryDetail ?: return@update state
+            state.copy(categoryDetail = detail.copy(sort = sort))
+        }
+    }
+
+    fun openRecordDetail(record: BillRecordEntity) {
+        _uiState.update { it.copy(recordDetail = record) }
+    }
+
+    fun closeRecordDetail() {
+        _uiState.update { it.copy(recordDetail = null) }
+    }
+
+    fun editSelectedRecord() {
+        val record = _uiState.value.recordDetail ?: return
+        val recordDate = record.localDate()
+        _uiState.update {
+            it.copy(
+                recordDetail = null,
+                addBillState = AddBillState(
+                    editingRecordId = record.id,
+                    editingCreatedAt = record.createdAt,
+                    type = record.type,
+                    category = record.category,
+                    amountInput = "%.2f".format(record.amountCents / 100.0),
+                    date = recordDate,
+                    calendarMonth = YearMonth.from(recordDate),
+                    note = record.note,
+                    noteDraft = record.note,
+                ),
+            )
+        }
+    }
+
+    fun deleteSelectedRecord() {
+        val record = _uiState.value.recordDetail ?: return
+        viewModelScope.launch {
+            repository.deleteRecord(record.id)
+            _uiState.update { it.copy(recordDetail = null) }
+            refreshLedgerRecords()
+        }
+    }
+
+    fun regenerateSeedData() {
+        viewModelScope.launch {
+            repository.deleteAllRecords()
+            repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
+            preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
+            _uiState.update {
+                it.copy(
+                    settingsMessage = "已重新生成 2024 和 2025 测试数据",
+                    selectedMonth = YearMonth.of(2025, 12),
+                    statisticsMonth = YearMonth.of(2025, 12),
+                    selectedCategory = null,
+                )
+            }
+            observeLedgerMonth()
+            observeStatisticsMonth()
+        }
+    }
+
+    fun clearSettingsMessage() {
+        _uiState.update { it.copy(settingsMessage = null) }
+    }
+
+    private fun observeLedgerMonth() {
+        observeLedgerAllJob?.cancel()
+        val state = _uiState.value
+        val start = state.selectedMonth.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = state.selectedMonth.plusMonths(1).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        observeLedgerAllJob = viewModelScope.launch {
+            repository.observeRecordsForMonth(start, end, state.selectedCategory).collectLatest { records ->
+                _uiState.update { it.copy(ledgerAllRecords = records) }
+            }
+        }
+        refreshLedgerRecords()
+    }
+
+    fun refreshLedgerRecords() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isLedgerRefreshing = true,
+                    ledgerPage = 0,
+                    hasMoreLedgerRecords = true,
+                )
+            }
+            val page = loadLedgerPage(offset = 0)
+            _uiState.update {
+                it.copy(
+                    ledgerRecords = page,
+                    ledgerPage = 1,
+                    hasMoreLedgerRecords = page.size == LEDGER_PAGE_SIZE,
+                    isLedgerRefreshing = false,
+                )
+            }
+        }
+    }
+
+    fun loadMoreLedgerRecords() {
+        val state = _uiState.value
+        if (state.isLedgerLoadingMore || state.isLedgerRefreshing || !state.hasMoreLedgerRecords) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLedgerLoadingMore = true) }
+            val page = loadLedgerPage(offset = state.ledgerPage * LEDGER_PAGE_SIZE)
+            _uiState.update {
+                it.copy(
+                    ledgerRecords = it.ledgerRecords + page,
+                    ledgerPage = it.ledgerPage + 1,
+                    hasMoreLedgerRecords = page.size == LEDGER_PAGE_SIZE,
+                    isLedgerLoadingMore = false,
+                )
+            }
+        }
+    }
+
+    private suspend fun loadLedgerPage(offset: Int): List<BillRecordEntity> {
+        val state = _uiState.value
+        val start = state.selectedMonth.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = state.selectedMonth.plusMonths(1).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        return repository.getRecordsPageForMonth(
+            startMillis = start,
+            endMillis = end,
+            category = state.selectedCategory,
+            limit = LEDGER_PAGE_SIZE,
+            offset = offset,
+        )
+    }
+
+    private fun seedDemoDataIfNeeded() {
+        viewModelScope.launch {
+            if (preferences.getBoolean(KEY_SEED_DATA_INSERTED, false)) return@launch
+            val start = LocalDate.of(2024, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+            val end = LocalDate.of(2026, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+            if (repository.countRecordsBetween(start, end) == 0) {
+                repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
+            }
+            preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
+        }
+    }
+
+    private fun observeStatisticsMonth() {
+        observeStatisticsJob?.cancel()
+        observeStatisticsRangeJob?.cancel()
+        val state = _uiState.value
+        val start = state.statisticsMonth.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val end = state.statisticsMonth.plusMonths(1).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        observeStatisticsJob = viewModelScope.launch {
+            repository.observeRecordsForMonth(start, end, null).collectLatest { records ->
+                _uiState.update { it.copy(statisticsRecords = records) }
+            }
+        }
+        val rangeStart = state.statisticsMonth.minusMonths(5).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        observeStatisticsRangeJob = viewModelScope.launch {
+            repository.observeRecordsBetween(rangeStart, end).collectLatest { records ->
+                _uiState.update { it.copy(statisticsRangeRecords = records) }
+            }
+        }
+    }
+
+    private fun parseAmountCents(input: String): Long {
+        return runCatching {
+            BigDecimal(input.ifBlank { "0" })
+                .multiply(BigDecimal(100))
+                .setScale(0, RoundingMode.HALF_UP)
+                .toLong()
+        }.getOrDefault(0)
+    }
+
+}
+
+data class LedgerUiState(
+    val selectedTab: AppTab = AppTab.LEDGER,
+    val selectedMonth: YearMonth = YearMonth.now(),
+    val statisticsMonth: YearMonth = YearMonth.now(),
+    val tempYearMonth: YearMonth = YearMonth.now(),
+    val monthPickerTarget: MonthPickerTarget? = null,
+    val selectedCategory: String? = null,
+    val isTypeFilterVisible: Boolean = false,
+    val ledgerRecords: List<BillRecordEntity> = emptyList(),
+    val ledgerAllRecords: List<BillRecordEntity> = emptyList(),
+    val ledgerPage: Int = 0,
+    val hasMoreLedgerRecords: Boolean = true,
+    val isLedgerRefreshing: Boolean = false,
+    val isLedgerLoadingMore: Boolean = false,
+    val statisticsRecords: List<BillRecordEntity> = emptyList(),
+    val statisticsRangeRecords: List<BillRecordEntity> = emptyList(),
+    val addBillState: AddBillState? = null,
+    val statisticsMode: BillType = BillType.EXPENSE,
+    val categoryDetail: CategoryDetailState? = null,
+    val recordDetail: BillRecordEntity? = null,
+    val settingsMessage: String? = null,
+)
+
+data class AddBillState(
+    val editingRecordId: Long? = null,
+    val editingCreatedAt: Long = System.currentTimeMillis(),
+    val type: BillType = BillType.EXPENSE,
+    val category: String = DefaultCategories.expense.first().name,
+    val amountInput: String = "",
+    val date: LocalDate = LocalDate.now(),
+    val calendarMonth: YearMonth = YearMonth.now(),
+    val note: String = "",
+    val noteDraft: String = "",
+    val errorMessage: String? = null,
+    val isDatePickerVisible: Boolean = false,
+    val isNoteEditorVisible: Boolean = false,
+)
+
+data class CategoryDetailState(
+    val category: String,
+    val sort: DetailSort = DetailSort.AMOUNT,
+)
+
+enum class AppTab {
+    LEDGER,
+    STATISTICS,
+    SETTINGS,
+}
+
+private const val LEDGER_PAGE_SIZE = 20
+private const val KEY_SEED_DATA_INSERTED = "seed_data_inserted"
+
+enum class MonthPickerTarget {
+    LEDGER,
+    STATISTICS,
+}
+
+enum class DetailSort {
+    AMOUNT,
+    TIME,
+}
+
+data class DailyGroup(
+    val date: LocalDate,
+    val records: List<BillRecordEntity>,
+    val expenseCents: Long,
+    val incomeCents: Long,
+)
+
+data class CategorySummary(
+    val category: String,
+    val amountCents: Long,
+    val percent: Float,
+)
+
+fun List<BillRecordEntity>.expenseTotal(): Long =
+    filter { it.type == BillType.EXPENSE }.sumOf { it.amountCents }
+
+fun List<BillRecordEntity>.incomeTotal(): Long =
+    filter { it.type == BillType.INCOME }.sumOf { it.amountCents }
+
+fun List<BillRecordEntity>.groupsByDay(): List<DailyGroup> =
+    groupBy { it.localDate() }
+        .toSortedMap(compareByDescending { it })
+        .map { (date, records) ->
+            DailyGroup(
+                date = date,
+                records = records.sortedByDescending { it.occurredAt },
+                expenseCents = records.expenseTotal(),
+                incomeCents = records.incomeTotal(),
+            )
+        }
+
+fun List<BillRecordEntity>.categorySummaries(type: BillType): List<CategorySummary> {
+    val filtered = filter { it.type == type }
+    val total = filtered.sumOf { it.amountCents }.takeIf { it > 0 } ?: return emptyList()
+    return filtered.groupBy { it.category }
+        .map { (category, records) ->
+            val amount = records.sumOf { it.amountCents }
+            CategorySummary(
+                category = category,
+                amountCents = amount,
+                percent = amount.toFloat() / total.toFloat(),
+            )
+        }
+        .sortedByDescending { it.amountCents }
+}
+
+fun BillRecordEntity.localDate(): LocalDate =
+    Instant.ofEpochMilli(occurredAt).atZone(ZoneId.systemDefault()).toLocalDate()
+
+fun BillRecordEntity.dateTimeText(): String =
+    Instant.ofEpochMilli(occurredAt)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("M月d日 HH:mm"))
+
+fun centsText(cents: Long): String = "¥%.2f".format(cents / 100.0)
+
+fun signedCentsText(record: BillRecordEntity): String {
+    val prefix = when (record.type) {
+        BillType.EXPENSE -> "-"
+        BillType.INCOME -> "+"
+        BillType.EXCLUDED -> ""
+    }
+    return "$prefix${"%.2f".format(record.amountCents / 100.0)}"
+}
