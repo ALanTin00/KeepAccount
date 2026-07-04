@@ -46,7 +46,7 @@ interface BillRecordDao {
     fun observeRecordsForMonthAndCategory(
         startMillis: Long,
         endMillis: Long,
-        category: String?,
+        category: Int?,
     ): Flow<List<BillRecordEntity>>
 
     @Query(
@@ -61,7 +61,7 @@ interface BillRecordDao {
     suspend fun getRecordsPageForMonthAndCategory(
         startMillis: Long,
         endMillis: Long,
-        category: String?,
+        category: Int?,
         limit: Int,
         offset: Int,
     ): List<BillRecordEntity>

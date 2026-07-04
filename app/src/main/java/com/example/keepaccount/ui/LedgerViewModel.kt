@@ -57,7 +57,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(isTypeFilterVisible = false) }
     }
 
-    fun selectCategoryFilter(category: String?) {
+    fun selectCategoryFilter(category: Int?) {
         _uiState.update {
             it.copy(
                 selectedCategory = category,
@@ -136,8 +136,8 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { state ->
             val current = state.addBillState ?: return@update state
             val defaultCategory = when (type) {
-                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense.first().name
-                BillType.INCOME -> DefaultCategories.income.first().name
+                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense.first().id
+                BillType.INCOME -> DefaultCategories.income.first().id
             }
             state.copy(
                 addBillState = current.copy(
@@ -148,7 +148,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun updateAddBillCategory(category: String) {
+    fun updateAddBillCategory(category: Int) {
         _uiState.update { state ->
             val current = state.addBillState ?: return@update state
             state.copy(addBillState = current.copy(category = category))
@@ -296,7 +296,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(statisticsMode = type) }
     }
 
-    fun openCategoryDetail(category: String) {
+    fun openCategoryDetail(category: Int) {
         _uiState.update {
             it.copy(
                 selectedTab = AppTab.STATISTICS,
@@ -488,7 +488,7 @@ data class LedgerUiState(
     val statisticsMonth: YearMonth = YearMonth.now(),
     val tempYearMonth: YearMonth = YearMonth.now(),
     val monthPickerTarget: MonthPickerTarget? = null,
-    val selectedCategory: String? = null,
+    val selectedCategory: Int? = null,
     val isTypeFilterVisible: Boolean = false,
     val ledgerRecords: List<BillRecordEntity> = emptyList(),
     val ledgerAllRecords: List<BillRecordEntity> = emptyList(),
@@ -509,7 +509,7 @@ data class AddBillState(
     val editingRecordId: Long? = null,
     val editingCreatedAt: Long = System.currentTimeMillis(),
     val type: BillType = BillType.EXPENSE,
-    val category: String = DefaultCategories.expense.first().name,
+    val category: Int = DefaultCategories.expense.first().id,
     val amountInput: String = "",
     val date: LocalDate = LocalDate.now(),
     val calendarMonth: YearMonth = YearMonth.now(),
@@ -521,7 +521,7 @@ data class AddBillState(
 )
 
 data class CategoryDetailState(
-    val category: String,
+    val category: Int,
     val sort: DetailSort = DetailSort.AMOUNT,
 )
 
@@ -552,7 +552,7 @@ data class DailyGroup(
 )
 
 data class CategorySummary(
-    val category: String,
+    val category: Int,
     val amountCents: Long,
     val percent: Float,
 )

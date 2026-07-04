@@ -44,7 +44,7 @@ class BillRepositoryInstrumentedTest {
     fun savedRecords_canBeReadAgainFromRoom() = runBlocking {
         repository.addRecord(
             type = BillType.EXPENSE,
-            category = "餐饮",
+            category = 1,
             amountCents = 1_200,
             note = "午餐",
             occurredAt = millis(LocalDate.of(2025, 6, 8), 12, 0),
@@ -57,7 +57,7 @@ class BillRepositoryInstrumentedTest {
         ).first()
 
         assertEquals(1, records.size)
-        assertEquals("餐饮", records.single().category)
+        assertEquals(1, records.single().category)
         assertEquals(1_200, records.single().amountCents)
     }
 
@@ -65,20 +65,20 @@ class BillRepositoryInstrumentedTest {
     fun monthAndCategoryFilter_returnOnlyMatchingRecords() = runBlocking {
         repository.addRecords(
             listOf(
-                record(category = "餐饮", occurredAt = millis(LocalDate.of(2025, 6, 1), 9, 0)),
-                record(category = "交通", occurredAt = millis(LocalDate.of(2025, 6, 2), 9, 0)),
-                record(category = "餐饮", occurredAt = millis(LocalDate.of(2025, 7, 1), 9, 0)),
+                record(category = 1, occurredAt = millis(LocalDate.of(2025, 6, 1), 9, 0)),
+                record(category = 2, occurredAt = millis(LocalDate.of(2025, 6, 2), 9, 0)),
+                record(category = 1, occurredAt = millis(LocalDate.of(2025, 7, 1), 9, 0)),
             ),
         )
 
         val records = repository.observeRecordsForMonth(
             startMillis = monthStart(YearMonth.of(2025, 6)),
             endMillis = monthEnd(YearMonth.of(2025, 6)),
-            category = "餐饮",
+            category = 1,
         ).first()
 
         assertEquals(1, records.size)
-        assertEquals("餐饮", records.single().category)
+        assertEquals(1, records.single().category)
         assertEquals(LocalDate.of(2025, 6, 1), records.single().localDateForTest())
     }
 
@@ -118,7 +118,7 @@ class BillRepositoryInstrumentedTest {
     private fun record(
         id: Long = 0,
         type: BillType = BillType.EXPENSE,
-        category: String = "餐饮",
+        category: Int = 1,
         amountCents: Long = 1_000,
         occurredAt: Long,
     ): BillRecordEntity =

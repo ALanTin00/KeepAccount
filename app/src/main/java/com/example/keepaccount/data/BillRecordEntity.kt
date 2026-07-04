@@ -8,7 +8,7 @@ data class BillRecordEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val type: BillType,
-    val category: String,
+    val category: Int,
     val amountCents: Long,
     val note: String,
     val occurredAt: Long,

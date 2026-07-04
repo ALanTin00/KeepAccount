@@ -1,15 +1,14 @@
 package com.example.keepaccount.ui
 
 import androidx.annotation.DrawableRes
-import android.graphics.Bitmap
-import android.graphics.Canvas as AndroidCanvas
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,23 +55,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.appcompat.content.res.AppCompatResources
 import com.example.keepaccount.R
+import com.example.keepaccount.data.BillCategory
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
 import com.example.keepaccount.data.DefaultCategories
@@ -142,7 +141,7 @@ private fun KeepAccountScreen(
     onTabSelected: (AppTab) -> Unit,
     onShowTypeFilter: () -> Unit,
     onDismissTypeFilter: () -> Unit,
-    onCategoryFilterSelected: (String?) -> Unit,
+    onCategoryFilterSelected: (Int?) -> Unit,
     onShowMonthPicker: (MonthPickerTarget) -> Unit,
     onDismissMonthPicker: () -> Unit,
     onChangeTempMonth: (Long) -> Unit,
@@ -150,7 +149,7 @@ private fun KeepAccountScreen(
     onOpenAddBill: () -> Unit,
     onCloseAddBill: () -> Unit,
     onUpdateAddBillType: (BillType) -> Unit,
-    onUpdateAddBillCategory: (String) -> Unit,
+    onUpdateAddBillCategory: (Int) -> Unit,
     onAppendAmount: (String) -> Unit,
     onDeleteAmount: () -> Unit,
     onSaveAddBill: () -> Unit,
@@ -163,7 +162,7 @@ private fun KeepAccountScreen(
     onConfirmNote: () -> Unit,
     onDismissNoteEditor: () -> Unit,
     onSwitchStatisticsMode: (BillType) -> Unit,
-    onOpenCategoryDetail: (String) -> Unit,
+    onOpenCategoryDetail: (Int) -> Unit,
     onCloseCategoryDetail: () -> Unit,
     onSetCategoryDetailSort: (DetailSort) -> Unit,
     onOpenRecordDetail: (BillRecordEntity) -> Unit,
@@ -307,7 +306,7 @@ private fun LedgerPage(
 ) {
     val allRecords = state.ledgerAllRecords
     val groups = state.ledgerRecords.groupsByDay()
-    val categoryLabel = state.selectedCategory ?: "全部类型"
+    val categoryLabel = state.selectedCategory?.let(DefaultCategories::nameOf) ?: "全部类型"
     val listState = rememberLazyListState()
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -408,11 +407,6 @@ private fun LedgerHeader(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.align(Alignment.Center),
             )
-            MiniProgramCapsule(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 12.dp),
-            )
         }
         Row(
             modifier = Modifier
@@ -429,19 +423,26 @@ private fun LedgerHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .border(0.5.dp, Color.White.copy(alpha = 0.25f))
-                .clickable(onClick = onShowMonthPicker)
                 .padding(horizontal = 22.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = "${month.year}年${month.monthValue}月",
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "  ▾",
-                color = Color.White,
-            )
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable(onClick = onShowMonthPicker)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${month.year}年${month.monthValue}月",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = "  ▾",
+                    color = Color.White,
+                )
+            }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = "总支出${centsText(totalExpense)}",
@@ -556,11 +557,11 @@ private fun BillRecordRow(
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CategoryIcon()
+        CategoryIcon(category = record.category)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = record.category,
+                text = DefaultCategories.nameOf(record.category),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -596,15 +597,12 @@ private fun BillRecordRow(
 
 @Composable
 private fun CategoryIcon(
-    @DrawableRes resId: Int = R.mipmap.ic_launcher,
+    category: Int? = null,
     modifier: Modifier = Modifier,
     backgroundColor: Color = BrandGreen,
     contentAlpha: Float = 1f,
 ) {
-    val context = LocalContext.current
-    val imageBitmap = remember(resId) {
-        AppCompatResources.getDrawable(context, resId)?.toBitmap(48, 48)?.asImageBitmap()
-    }
+    val iconResId = categoryIconResId(category)
     Box(
         modifier = modifier
             .size(34.dp)
@@ -612,23 +610,48 @@ private fun CategoryIcon(
             .background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
-        if (imageBitmap != null) {
-            Image(
-                bitmap = imageBitmap,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(22.dp)
-                    .alpha(contentAlpha),
-                contentScale = ContentScale.Fit,
+        if (iconResId == null) {
+            Text(
+                text = "?",
+                color = Color.White.copy(alpha = contentAlpha),
+                fontWeight = FontWeight.Bold,
             )
         } else {
-            Text(
-                text = "账",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
+            Image(
+                painter = painterResource(iconResId),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(24.dp)
+                    .graphicsLayer { alpha = contentAlpha },
+                contentScale = ContentScale.Fit,
             )
         }
     }
+}
+
+@DrawableRes
+private fun categoryIconResId(category: Int?): Int? = when (category) {
+    DefaultCategories.UNKNOWN_ID -> R.drawable.category_branch
+    1 -> R.drawable.category_flower
+    2 -> R.drawable.category_sunny
+    3 -> R.drawable.category_rainbow
+    4 -> R.drawable.category_leaf
+    5 -> R.drawable.category_feather
+    6 -> R.drawable.category_flower
+    7 -> R.drawable.category_music
+    8 -> R.drawable.category_branch
+    9 -> R.drawable.category_branch
+    10 -> R.drawable.category_leaf
+    11 -> R.drawable.category_sunny
+    12 -> R.drawable.category_bird
+    13 -> R.drawable.category_feather
+    14 -> R.drawable.category_rainbow
+    101 -> R.drawable.category_leaf
+    102 -> R.drawable.category_flower
+    103 -> R.drawable.category_rainbow
+    104 -> R.drawable.category_branch
+    105 -> R.drawable.category_sunny
+    else -> null
 }
 
 @Composable
@@ -636,7 +659,7 @@ private fun StatisticsPage(
     state: LedgerUiState,
     onShowMonthPicker: () -> Unit,
     onSwitchMode: (BillType) -> Unit,
-    onOpenCategoryDetail: (String) -> Unit,
+    onOpenCategoryDetail: (Int) -> Unit,
 ) {
     val records = state.statisticsRecords.filter { it.type == state.statisticsMode }
     val summaries = state.statisticsRecords.categorySummaries(state.statisticsMode)
@@ -733,12 +756,7 @@ private fun StatisticsHeader(
             .background(BrandGreen)
             .padding(start = 20.dp, end = 20.dp, top = 28.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            MiniProgramCapsule()
-        }
+        Spacer(modifier = Modifier.height(32.dp))
         Spacer(modifier = Modifier.height(68.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -844,10 +862,10 @@ private fun CategorySummaryRow(
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CategoryIcon()
+        CategoryIcon(category = summary.category)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = summary.category,
+            text = DefaultCategories.nameOf(summary.category),
             modifier = Modifier.width(70.dp),
             fontWeight = FontWeight.SemiBold,
         )
@@ -980,7 +998,7 @@ private fun CategoryDetailPage(
         }
         Spacer(modifier = Modifier.height(48.dp))
         Text(
-            text = "${state.statisticsMonth.monthValue}月${detail.category}共${state.statisticsMode.label()}",
+            text = "${state.statisticsMonth.monthValue}月${DefaultCategories.nameOf(detail.category)}共${state.statisticsMode.label()}",
             color = MutedText,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
@@ -1039,10 +1057,10 @@ private fun DetailRecordRow(record: BillRecordEntity) {
             .padding(horizontal = 26.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CategoryIcon()
+        CategoryIcon(category = record.category)
         Spacer(modifier = Modifier.width(14.dp))
         Text(
-            text = record.category,
+            text = DefaultCategories.nameOf(record.category),
             modifier = Modifier.weight(1f),
             fontWeight = FontWeight.SemiBold,
         )
@@ -1063,9 +1081,9 @@ private fun DetailRecordRow(record: BillRecordEntity) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TypeFilterSheet(
-    selectedCategory: String?,
+    selectedCategory: Int?,
     onDismiss: () -> Unit,
-    onCategorySelected: (String?) -> Unit,
+    onCategorySelected: (Int?) -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1095,7 +1113,7 @@ private fun TypeFilterSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             CategoryGrid(
-                categories = DefaultCategories.expense.map { it.name },
+                categories = DefaultCategories.expense,
                 selected = selectedCategory,
                 onSelected = { onCategorySelected(it) },
             )
@@ -1105,7 +1123,7 @@ private fun TypeFilterSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             CategoryGrid(
-                categories = DefaultCategories.income.map { it.name },
+                categories = DefaultCategories.income,
                 selected = selectedCategory,
                 onSelected = { onCategorySelected(it) },
             )
@@ -1119,7 +1137,7 @@ private fun AddBillSheet(
     state: AddBillState,
     onDismiss: () -> Unit,
     onTypeSelected: (BillType) -> Unit,
-    onCategorySelected: (String) -> Unit,
+    onCategorySelected: (Int) -> Unit,
     onAppendAmount: (String) -> Unit,
     onDeleteAmount: () -> Unit,
     onSave: () -> Unit,
@@ -1175,8 +1193,8 @@ private fun AddBillSheet(
                 fontWeight = FontWeight.Bold,
             )
             val categories = when (state.type) {
-                BillType.INCOME -> DefaultCategories.income.map { it.name }
-                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense.map { it.name }
+                BillType.INCOME -> DefaultCategories.income
+                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense
             }
             IconCategoryGrid(
                 categories = categories,
@@ -1225,9 +1243,9 @@ private fun ModeSegment(text: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun IconCategoryGrid(
-    categories: List<String>,
-    selected: String,
-    onSelected: (String) -> Unit,
+    categories: List<BillCategory>,
+    selected: Int,
+    onSelected: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         categories.chunked(6).forEach { rowItems ->
@@ -1236,22 +1254,23 @@ private fun IconCategoryGrid(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 rowItems.forEach { category ->
-                    val isSelected = selected == category
+                    val isSelected = selected == category.id
                     Column(
                         modifier = Modifier
                             .width(52.dp)
-                            .clickable { onSelected(category) }
+                            .clickable { onSelected(category.id) }
                             .padding(vertical = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         CategoryIcon(
+                            category = category.id,
                             backgroundColor = if (isSelected) BrandGreen else CategoryInactiveGray,
                             contentAlpha = if (isSelected) 1f else 0.36f,
                             modifier = Modifier
                                 .size(34.dp),
                         )
                         Text(
-                            text = category,
+                            text = category.name,
                             color = if (isSelected) BrandGreen else MutedText,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
@@ -1456,7 +1475,7 @@ private fun RecordDetailSheet(
         ) {
             SheetTitle("账单详情", onDismiss)
             DetailLine(label = "类型", value = record.type.label())
-            DetailLine(label = "分类", value = record.category)
+            DetailLine(label = "分类", value = DefaultCategories.nameOf(record.category))
             DetailLine(label = "金额", value = signedCentsText(record))
             DetailLine(label = "日期", value = record.dateTimeText())
             DetailLine(label = "备注", value = record.note.ifBlank { "无" })
@@ -1530,64 +1549,68 @@ private fun MonthPickerDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(420.dp)
-                .padding(horizontal = 24.dp),
+                .height(330.dp)
+                .padding(horizontal = 18.dp),
         ) {
             Text(
                 text = "选择月份",
-                modifier = Modifier.padding(top = 20.dp, bottom = 26.dp),
+                modifier = Modifier.padding(top = 16.dp, bottom = 14.dp),
                 fontWeight = FontWeight.SemiBold,
             )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(86.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFF7F7F7)),
+                    .height(1.dp)
+                    .background(Divider),
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
                 contentAlignment = Alignment.Center,
             ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFF7F7F7)),
+                )
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Text(
-                        text = "${selectedMonth.year}年",
-                        modifier = Modifier.width(118.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                    MonthWheelColumn(
+                        previousText = "${selectedMonth.minusYears(1).year}年",
+                        selectedText = "${selectedMonth.year}年",
+                        nextText = "${selectedMonth.plusYears(1).year}年",
+                        onPrevious = { onChangeMonth(-12) },
+                        onNext = { onChangeMonth(12) },
+                        modifier = Modifier.weight(1f),
                     )
-                    Text(
-                        text = "${selectedMonth.monthValue}月",
-                        modifier = Modifier.width(118.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                    MonthWheelColumn(
+                        previousText = "${selectedMonth.minusMonths(1).monthValue}月",
+                        selectedText = "${selectedMonth.monthValue}月",
+                        nextText = "${selectedMonth.plusMonths(1).monthValue}月",
+                        onPrevious = { onChangeMonth(-1) },
+                        onNext = { onChangeMonth(1) },
+                        modifier = Modifier.weight(1f),
                     )
                 }
-            }
-            Spacer(modifier = Modifier.height(18.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                MonthStepButton("上一年") { onChangeMonth(-12) }
-                MonthStepButton("上一月") { onChangeMonth(-1) }
-                MonthStepButton("下一月") { onChangeMonth(1) }
-                MonthStepButton("下一年") { onChangeMonth(12) }
             }
             Spacer(modifier = Modifier.weight(1f))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 42.dp),
+                    .padding(bottom = 26.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 Button(
                     onClick = onDismiss,
                     modifier = Modifier
-                        .width(128.dp)
-                        .height(52.dp),
+                        .width(96.dp)
+                        .height(44.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFFF2F2F2),
                         contentColor = Color.Black,
@@ -1600,8 +1623,8 @@ private fun MonthPickerDialog(
                 Button(
                     onClick = onConfirm,
                     modifier = Modifier
-                        .width(128.dp)
-                        .height(52.dp),
+                        .width(96.dp)
+                        .height(44.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10C76F)),
                     shape = RoundedCornerShape(8.dp),
                 ) {
@@ -1613,16 +1636,102 @@ private fun MonthPickerDialog(
 }
 
 @Composable
-private fun MonthStepButton(text: String, onClick: () -> Unit) {
+private fun MonthWheelColumn(
+    previousText: String,
+    selectedText: String,
+    nextText: String,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dragStepPx = 36f
+    var dragOffset by remember { mutableStateOf(0f) }
+
+    Column(
+        modifier = modifier
+            .height(150.dp)
+            .pointerInput(onPrevious, onNext) {
+                detectVerticalDragGestures(
+                    onDragCancel = { dragOffset = 0f },
+                    onDragEnd = { dragOffset = 0f },
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()
+                        dragOffset += dragAmount
+                        when {
+                            dragOffset >= dragStepPx -> {
+                                onPrevious()
+                                dragOffset = 0f
+                            }
+
+                            dragOffset <= -dragStepPx -> {
+                                onNext()
+                                dragOffset = 0f
+                            }
+                        }
+                    },
+                )
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        MonthWheelItem(
+            text = previousText,
+            selected = false,
+            onClick = onPrevious,
+        )
+        MonthWheelItem(
+            text = selectedText,
+            selected = true,
+            fontWeight = FontWeight.SemiBold,
+        )
+        MonthWheelItem(
+            text = nextText,
+            selected = false,
+            onClick = onNext,
+        )
+    }
+}
+
+@Composable
+private fun MonthWheelItem(
+    text: String,
+    selected: Boolean,
+    fontWeight: FontWeight = FontWeight.Normal,
+    onClick: (() -> Unit)? = null,
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.18f else 0.88f,
+        animationSpec = tween(durationMillis = 180),
+        label = "monthWheelItemScale",
+    )
+    val alpha by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.35f,
+        animationSpec = tween(durationMillis = 180),
+        label = "monthWheelItemAlpha",
+    )
+
     Text(
         text = text,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(Color(0xFFF7F7F7))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        color = MutedText,
-        style = MaterialTheme.typography.bodySmall,
+            .height(46.dp)
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                this.alpha = alpha
+            }
+            .then(
+                if (onClick == null) {
+                    Modifier
+                } else {
+                    Modifier.clickable(onClick = onClick)
+                },
+            )
+            .wrapContentHeight(Alignment.CenterVertically),
+        color = if (selected) Color.Black else MutedText,
+        textAlign = TextAlign.Center,
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = fontWeight,
     )
 }
 
@@ -1692,9 +1801,9 @@ private fun CalendarGrid(
 
 @Composable
 private fun CategoryGrid(
-    categories: List<String>,
-    selected: String?,
-    onSelected: (String) -> Unit,
+    categories: List<BillCategory>,
+    selected: Int?,
+    onSelected: (Int) -> Unit,
 ) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         categories.chunked(3).forEach { rowItems ->
@@ -1703,17 +1812,18 @@ private fun CategoryGrid(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 rowItems.forEach { category ->
+                    val isSelected = selected == category.id
                     Text(
-                        text = category,
+                        text = category.name,
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(if (selected == category) SoftGreen else Color(0xFFFAFAFA))
-                            .clickable { onSelected(category) }
+                            .background(if (isSelected) SoftGreen else Color(0xFFFAFAFA))
+                            .clickable { onSelected(category.id) }
                             .wrapContentHeight(),
                         textAlign = TextAlign.Center,
-                        color = if (selected == category) BrandGreen else Color.Black,
+                        color = if (isSelected) BrandGreen else Color.Black,
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
@@ -1927,17 +2037,4 @@ private fun monthlyPoints(
             value = byMonth[targetMonth] ?: 0L,
         )
     }
-}
-
-private fun Drawable.toBitmap(width: Int, height: Int): Bitmap {
-    if (this is BitmapDrawable && bitmap.width == width && bitmap.height == height) {
-        return bitmap
-    }
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = AndroidCanvas(bitmap)
-    val previousBounds = bounds
-    setBounds(0, 0, canvas.width, canvas.height)
-    draw(canvas)
-    bounds = previousBounds
-    return bitmap
 }

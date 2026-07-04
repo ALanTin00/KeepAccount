@@ -19,9 +19,9 @@ class LedgerCalculationsTest {
     @Test
     fun totals_ignoreExcludedRecords() {
         val records = listOf(
-            record(type = BillType.EXPENSE, category = "餐饮", amountCents = 1_200),
-            record(type = BillType.INCOME, category = "工资", amountCents = 5_000),
-            record(type = BillType.EXCLUDED, category = "购物", amountCents = 9_900),
+            record(type = BillType.EXPENSE, category = 1, amountCents = 1_200),
+            record(type = BillType.INCOME, category = 101, amountCents = 5_000),
+            record(type = BillType.EXCLUDED, category = 3, amountCents = 9_900),
         )
 
         assertEquals(1_200, records.expenseTotal())
@@ -47,19 +47,19 @@ class LedgerCalculationsTest {
     @Test
     fun categorySummaries_calculatesPercentAndSortsByAmount() {
         val records = listOf(
-            record(type = BillType.EXPENSE, category = "餐饮", amountCents = 2_000),
-            record(type = BillType.EXPENSE, category = "交通", amountCents = 500),
-            record(type = BillType.EXPENSE, category = "餐饮", amountCents = 1_000),
-            record(type = BillType.INCOME, category = "工资", amountCents = 8_000),
-            record(type = BillType.EXCLUDED, category = "购物", amountCents = 4_000),
+            record(type = BillType.EXPENSE, category = 1, amountCents = 2_000),
+            record(type = BillType.EXPENSE, category = 2, amountCents = 500),
+            record(type = BillType.EXPENSE, category = 1, amountCents = 1_000),
+            record(type = BillType.INCOME, category = 101, amountCents = 8_000),
+            record(type = BillType.EXCLUDED, category = 3, amountCents = 4_000),
         )
 
         val summaries = records.categorySummaries(BillType.EXPENSE)
 
-        assertEquals("餐饮", summaries[0].category)
+        assertEquals(1, summaries[0].category)
         assertEquals(3_000, summaries[0].amountCents)
         assertEquals(3_000f / 3_500f, summaries[0].percent)
-        assertEquals("交通", summaries[1].category)
+        assertEquals(2, summaries[1].category)
         assertEquals(500, summaries[1].amountCents)
     }
 
@@ -73,7 +73,7 @@ class LedgerCalculationsTest {
     private fun record(
         id: Long = 1,
         type: BillType = BillType.EXPENSE,
-        category: String = "餐饮",
+        category: Int = 1,
         amountCents: Long = 1_000,
         occurredAt: Long = millis(LocalDate.of(2025, 1, 1), 12, 0),
     ): BillRecordEntity =

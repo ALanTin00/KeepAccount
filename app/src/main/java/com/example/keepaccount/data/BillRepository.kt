@@ -8,14 +8,14 @@ class BillRepository(
     fun observeRecordsForMonth(
         startMillis: Long,
         endMillis: Long,
-        category: String?,
+        category: Int?,
     ): Flow<List<BillRecordEntity>> =
         dao.observeRecordsForMonthAndCategory(startMillis, endMillis, category)
 
     suspend fun getRecordsPageForMonth(
         startMillis: Long,
         endMillis: Long,
-        category: String?,
+        category: Int?,
         limit: Int,
         offset: Int,
     ): List<BillRecordEntity> =
@@ -29,7 +29,7 @@ class BillRepository(
 
     suspend fun addRecord(
         type: BillType,
-        category: String,
+        category: Int,
         amountCents: Long,
         note: String,
         occurredAt: Long,

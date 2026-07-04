@@ -6,8 +6,8 @@ import java.time.ZoneId
 
 object SeedDataFactory {
     fun createRecordsFor2024And2025(zoneId: ZoneId = ZoneId.systemDefault()): List<BillRecordEntity> {
-        val expenseCategories = DefaultCategories.expense.map { it.name }
-        val incomeCategories = DefaultCategories.income.map { it.name }
+        val expenseCategories = DefaultCategories.expense
+        val incomeCategories = DefaultCategories.income
         val records = mutableListOf<BillRecordEntity>()
         var date = LocalDate.of(2024, 1, 1)
         val end = LocalDate.of(2025, 12, 31)
@@ -19,9 +19,9 @@ object SeedDataFactory {
 
             records += seedRecord(
                 type = BillType.EXPENSE,
-                category = primaryExpense,
+                category = primaryExpense.id,
                 amountCents = expenseAmount(dayIndex, 0),
-                note = "日常${primaryExpense}",
+                note = "日常${primaryExpense.name}",
                 date = date,
                 time = LocalTime.of(8 + dayIndex % 12, 10 + dayIndex % 45),
                 zoneId = zoneId,
@@ -29,9 +29,9 @@ object SeedDataFactory {
 
             records += seedRecord(
                 type = BillType.EXPENSE,
-                category = secondaryExpense,
+                category = secondaryExpense.id,
                 amountCents = expenseAmount(dayIndex, 1),
-                note = "补充${secondaryExpense}",
+                note = "补充${secondaryExpense.name}",
                 date = date,
                 time = LocalTime.of(18 + dayIndex % 4, 5 + dayIndex % 50),
                 zoneId = zoneId,
@@ -41,9 +41,9 @@ object SeedDataFactory {
                 val category = incomeCategories[dayIndex % incomeCategories.size]
                 records += seedRecord(
                     type = BillType.INCOME,
-                    category = category,
+                    category = category.id,
                     amountCents = incomeAmount(dayIndex),
-                    note = "月度${category}",
+                    note = "月度${category.name}",
                     date = date,
                     time = LocalTime.of(9, 30),
                     zoneId = zoneId,
@@ -53,7 +53,7 @@ object SeedDataFactory {
             if (dayIndex % 19 == 0) {
                 records += seedRecord(
                     type = BillType.EXCLUDED,
-                    category = expenseCategories[(dayIndex + 2) % expenseCategories.size],
+                    category = expenseCategories[(dayIndex + 2) % expenseCategories.size].id,
                     amountCents = 1200L + (dayIndex % 7) * 350L,
                     note = "不计入收支",
                     date = date,
@@ -71,7 +71,7 @@ object SeedDataFactory {
 
     private fun seedRecord(
         type: BillType,
-        category: String,
+        category: Int,
         amountCents: Long,
         note: String,
         date: LocalDate,
