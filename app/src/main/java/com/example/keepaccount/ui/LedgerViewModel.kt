@@ -112,12 +112,16 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun openAddBill() {
+        openAddBillForMonth(_uiState.value.selectedMonth)
+    }
+
+    fun openAddBillForMonth(month: YearMonth) {
         _uiState.update {
             val today = LocalDate.now()
-            val defaultDate = if (YearMonth.from(today) == it.selectedMonth) {
+            val defaultDate = if (YearMonth.from(today) == month) {
                 today
             } else {
-                it.selectedMonth.atDay(1)
+                month.atDay(1)
             }
             it.copy(
                 addBillState = AddBillState(
@@ -250,7 +254,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun saveAddBill() {
+    fun saveAddBill(onSaved: (() -> Unit)? = null) {
         val form = _uiState.value.addBillState ?: return
         val amountCents = parseAmountCents(form.amountInput)
         if (amountCents <= 0) {
@@ -289,6 +293,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             }
             _uiState.update { it.copy(addBillState = null) }
             refreshLedgerRecords()
+            onSaved?.invoke()
         }
     }
 
@@ -303,6 +308,22 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 categoryDetail = CategoryDetailState(category = category),
             )
         }
+    }
+
+    fun openCategoryDetailForMonth(
+        category: Int,
+        type: BillType,
+        month: YearMonth,
+    ) {
+        _uiState.update {
+            it.copy(
+                selectedTab = AppTab.STATISTICS,
+                statisticsMode = type,
+                statisticsMonth = month,
+                categoryDetail = CategoryDetailState(category = category),
+            )
+        }
+        observeStatisticsMonth()
     }
 
     fun closeCategoryDetail() {

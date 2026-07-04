@@ -12,7 +12,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KeepAccount">
         <activity
+            android:name=".CategoryDetailActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.KeepAccount" />
+        <activity
+            android:name=".AddBillActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.KeepAccount" />
+        <activity
             android:name=".MainActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.KeepAccount" />
+        <activity
+            android:name=".SplashActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.KeepAccount">

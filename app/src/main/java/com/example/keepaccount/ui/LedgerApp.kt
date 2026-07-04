@@ -1,6 +1,7 @@
 package com.example.keepaccount.ui
 
 import androidx.annotation.DrawableRes
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,13 +22,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -64,12 +67,18 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.keepaccount.AddBillActivity
+import com.example.keepaccount.CategoryDetailActivity
 import com.example.keepaccount.R
 import com.example.keepaccount.data.BillCategory
 import com.example.keepaccount.data.BillRecordEntity
@@ -88,7 +97,6 @@ private val PageBg = Color(0xFFF3F4F3)
 private val SoftGreen = Color(0xFFE6F6EE)
 private val MutedText = Color(0xFF8C8C8C)
 private val Divider = Color(0xFFE9E9E9)
-private val CategoryInactiveGray = Color(0xFFEDEDED)
 private val ConfirmDisabledGray = Color(0xFFE0E0E0)
 
 @Composable
@@ -96,6 +104,18 @@ fun LedgerApp(
     viewModel: LedgerViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshLedgerRecords()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     KeepAccountScreen(
         state = state,
@@ -107,7 +127,7 @@ fun LedgerApp(
         onDismissMonthPicker = viewModel::dismissMonthPicker,
         onChangeTempMonth = viewModel::changeTempMonth,
         onConfirmMonthPicker = viewModel::confirmMonthPicker,
-        onOpenAddBill = viewModel::openAddBill,
+        onOpenAddBill = { context.startActivity(AddBillActivity.createIntent(context, state.selectedMonth)) },
         onCloseAddBill = viewModel::closeAddBill,
         onUpdateAddBillType = viewModel::updateAddBillType,
         onUpdateAddBillCategory = viewModel::updateAddBillCategory,
@@ -123,7 +143,16 @@ fun LedgerApp(
         onConfirmNote = viewModel::confirmNote,
         onDismissNoteEditor = viewModel::dismissNoteEditor,
         onSwitchStatisticsMode = viewModel::switchStatisticsMode,
-        onOpenCategoryDetail = viewModel::openCategoryDetail,
+        onOpenCategoryDetail = { category ->
+            context.startActivity(
+                CategoryDetailActivity.createIntent(
+                    context = context,
+                    category = category,
+                    type = state.statisticsMode,
+                    month = state.statisticsMonth,
+                ),
+            )
+        },
         onCloseCategoryDetail = viewModel::closeCategoryDetail,
         onSetCategoryDetailSort = viewModel::setCategoryDetailSort,
         onOpenRecordDetail = viewModel::openRecordDetail,
@@ -132,6 +161,86 @@ fun LedgerApp(
         onEditRecord = viewModel::editSelectedRecord,
         onLoadMoreLedger = viewModel::loadMoreLedgerRecords,
         onRegenerateSeedData = viewModel::regenerateSeedData,
+    )
+}
+
+@Composable
+fun AddBillActivityContent(
+    initialMonth: YearMonth,
+    onFinish: () -> Unit,
+    viewModel: LedgerViewModel = viewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(initialMonth) {
+        viewModel.openAddBillForMonth(initialMonth)
+    }
+
+    BackHandler(onBack = onFinish)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Transparent),
+    ) {
+        state.addBillState?.let { addState ->
+            AddBillPage(
+                state = addState,
+                onDismiss = onFinish,
+                onTypeSelected = viewModel::updateAddBillType,
+                onCategorySelected = viewModel::updateAddBillCategory,
+                onAppendAmount = viewModel::appendAmountInput,
+                onDeleteAmount = viewModel::deleteAmountInput,
+                onSave = { viewModel.saveAddBill(onSaved = onFinish) },
+                onShowDatePicker = viewModel::showDatePicker,
+                onShowNoteEditor = viewModel::showNoteEditor,
+            )
+            if (addState.isDatePickerVisible) {
+                DatePickerSheet(
+                    state = addState,
+                    onDismiss = viewModel::dismissDatePicker,
+                    onChangeMonth = viewModel::changeAddBillMonth,
+                    onDateSelected = viewModel::selectAddBillDate,
+                )
+            }
+            if (addState.isNoteEditorVisible) {
+                NoteEditorSheet(
+                    note = addState.noteDraft,
+                    onValueChange = viewModel::updateNoteDraft,
+                    onDismiss = viewModel::dismissNoteEditor,
+                    onConfirm = viewModel::confirmNote,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun CategoryDetailActivityContent(
+    category: Int,
+    type: BillType,
+    month: YearMonth,
+    onFinish: () -> Unit,
+    viewModel: LedgerViewModel = viewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    val detail = state.categoryDetail ?: CategoryDetailState(category = category)
+
+    LaunchedEffect(category, type, month) {
+        viewModel.openCategoryDetailForMonth(
+            category = category,
+            type = type,
+            month = month,
+        )
+    }
+
+    BackHandler(onBack = onFinish)
+
+    CategoryDetailPage(
+        state = state,
+        detail = detail,
+        onBack = onFinish,
+        onSortSelected = viewModel::setCategoryDetailSort,
     )
 }
 
@@ -599,21 +708,17 @@ private fun BillRecordRow(
 private fun CategoryIcon(
     category: Int? = null,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = BrandGreen,
     contentAlpha: Float = 1f,
 ) {
     val iconResId = categoryIconResId(category)
     Box(
-        modifier = modifier
-            .size(34.dp)
-            .clip(CircleShape)
-            .background(backgroundColor),
+        modifier = modifier.size(34.dp),
         contentAlignment = Alignment.Center,
     ) {
         if (iconResId == null) {
             Text(
                 text = "?",
-                color = Color.White.copy(alpha = contentAlpha),
+                color = MutedText.copy(alpha = contentAlpha),
                 fontWeight = FontWeight.Bold,
             )
         } else {
@@ -621,7 +726,7 @@ private fun CategoryIcon(
                 painter = painterResource(iconResId),
                 contentDescription = null,
                 modifier = Modifier
-                    .size(24.dp)
+                    .size(28.dp)
                     .graphicsLayer { alpha = contentAlpha },
                 contentScale = ContentScale.Fit,
             )
@@ -631,26 +736,26 @@ private fun CategoryIcon(
 
 @DrawableRes
 private fun categoryIconResId(category: Int?): Int? = when (category) {
-    DefaultCategories.UNKNOWN_ID -> R.drawable.category_branch
-    1 -> R.drawable.category_flower
-    2 -> R.drawable.category_sunny
-    3 -> R.drawable.category_rainbow
-    4 -> R.drawable.category_leaf
-    5 -> R.drawable.category_feather
-    6 -> R.drawable.category_flower
-    7 -> R.drawable.category_music
-    8 -> R.drawable.category_branch
-    9 -> R.drawable.category_branch
-    10 -> R.drawable.category_leaf
-    11 -> R.drawable.category_sunny
-    12 -> R.drawable.category_bird
-    13 -> R.drawable.category_feather
-    14 -> R.drawable.category_rainbow
-    101 -> R.drawable.category_leaf
-    102 -> R.drawable.category_flower
-    103 -> R.drawable.category_rainbow
-    104 -> R.drawable.category_branch
-    105 -> R.drawable.category_sunny
+    DefaultCategories.UNKNOWN_ID -> R.drawable.category_superhero
+    1 -> R.drawable.category_superhero
+    2 -> R.drawable.category_astronaut
+    3 -> R.drawable.category_firefighter
+    4 -> R.drawable.category_spaceman
+    5 -> R.drawable.category_lab_technician
+    6 -> R.drawable.category_ninja
+    7 -> R.drawable.category_cowboy
+    8 -> R.drawable.category_magician
+    9 -> R.drawable.category_wizard
+    10 -> R.drawable.category_musician
+    11 -> R.drawable.category_scientist
+    12 -> R.drawable.category_sailor
+    13 -> R.drawable.category_pirate
+    14 -> R.drawable.category_pilot
+    101 -> R.drawable.category_superhero
+    102 -> R.drawable.category_magician
+    103 -> R.drawable.category_wizard
+    104 -> R.drawable.category_scientist
+    105 -> R.drawable.category_cowboy
     else -> null
 }
 
@@ -993,8 +1098,6 @@ private fun CategoryDetailPage(
                     .clickable(onClick = onBack)
                     .padding(8.dp),
             )
-            Spacer(modifier = Modifier.weight(1f))
-            MiniProgramCapsule()
         }
         Spacer(modifier = Modifier.height(48.dp))
         Text(
@@ -1131,6 +1234,40 @@ private fun TypeFilterSheet(
     }
 }
 
+@Composable
+private fun AddBillPage(
+    state: AddBillState,
+    onDismiss: () -> Unit,
+    onTypeSelected: (BillType) -> Unit,
+    onCategorySelected: (Int) -> Unit,
+    onAppendAmount: (String) -> Unit,
+    onDeleteAmount: () -> Unit,
+    onSave: () -> Unit,
+    onShowDatePicker: () -> Unit,
+    onShowNoteEditor: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(bottom = 12.dp),
+    ) {
+        AddBillFormContent(
+            state = state,
+            onDismiss = onDismiss,
+            onTypeSelected = onTypeSelected,
+            onCategorySelected = onCategorySelected,
+            onAppendAmount = onAppendAmount,
+            onDeleteAmount = onDeleteAmount,
+            onSave = onSave,
+            onShowDatePicker = onShowDatePicker,
+            onShowNoteEditor = onShowNoteEditor,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddBillSheet(
@@ -1154,79 +1291,106 @@ private fun AddBillSheet(
                 .fillMaxWidth()
                 .padding(bottom = 20.dp),
         ) {
-            SheetCloseOnly(onDismiss)
-            Text(
-                text = if (state.editingRecordId == null) "记一笔" else "编辑账单",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 4.dp),
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Row(
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                listOf(BillType.EXPENSE, BillType.INCOME, BillType.EXCLUDED).forEach { type ->
-                    ModeSegment(
-                        text = type.label(),
-                        selected = state.type == type,
-                        onClick = { onTypeSelected(type) },
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = state.date.format(DateTimeFormatter.ofPattern("M月d日")) + " ▾",
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFFF5F5F5))
-                        .clickable(onClick = onShowDatePicker)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
-            Text(
-                text = "¥ ${state.amountInput.ifBlank { "0" }}",
-                modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            val categories = when (state.type) {
-                BillType.INCOME -> DefaultCategories.income
-                BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense
-            }
-            IconCategoryGrid(
-                categories = categories,
-                selected = state.category,
-                onSelected = onCategorySelected,
-            )
-            Text(
-                text = if (state.note.isBlank()) "添加备注" else "备注：${state.note}",
-                color = BrandGreen,
-                modifier = Modifier
-                    .padding(horizontal = 18.dp, vertical = 8.dp)
-                    .clickable(onClick = onShowNoteEditor),
-            )
-            state.errorMessage?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(horizontal = 18.dp),
-                )
-            }
-            val isAmountValid = state.amountInput.toDoubleOrNull()?.let { it > 0.0 } == true
-            NumberPad(
-                onAppend = onAppendAmount,
-                onDelete = onDeleteAmount,
-                onConfirm = onSave,
-                confirmEnabled = isAmountValid,
-                confirmText = if (state.editingRecordId == null) "确定" else "保存",
+            AddBillFormContent(
+                state = state,
+                onDismiss = onDismiss,
+                onTypeSelected = onTypeSelected,
+                onCategorySelected = onCategorySelected,
+                onAppendAmount = onAppendAmount,
+                onDeleteAmount = onDeleteAmount,
+                onSave = onSave,
+                onShowDatePicker = onShowDatePicker,
+                onShowNoteEditor = onShowNoteEditor,
             )
         }
     }
 }
 
+@Composable
+private fun AddBillFormContent(
+    state: AddBillState,
+    onDismiss: () -> Unit,
+    onTypeSelected: (BillType) -> Unit,
+    onCategorySelected: (Int) -> Unit,
+    onAppendAmount: (String) -> Unit,
+    onDeleteAmount: () -> Unit,
+    onSave: () -> Unit,
+    onShowDatePicker: () -> Unit,
+    onShowNoteEditor: () -> Unit,
+) {
+    SheetCloseOnly(onDismiss)
+    Text(
+        text = if (state.editingRecordId == null) "记一笔" else "编辑账单",
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 4.dp),
+        textAlign = TextAlign.Center,
+        fontWeight = FontWeight.SemiBold,
+    )
+    Row(
+        modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        listOf(BillType.EXPENSE, BillType.INCOME, BillType.EXCLUDED).forEach { type ->
+            ModeSegment(
+                text = type.label(),
+                selected = state.type == type,
+                onClick = { onTypeSelected(type) },
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            text = state.date.format(DateTimeFormatter.ofPattern("M月d日")) + " ▾",
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color(0xFFF5F5F5))
+                .clickable(onClick = onShowDatePicker)
+                .padding(horizontal = 8.dp, vertical = 7.dp),
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Clip,
+        )
+    }
+    Text(
+        text = "¥ ${state.amountInput.ifBlank { "0" }}",
+        modifier = Modifier.padding(horizontal = 22.dp, vertical = 14.dp),
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.Bold,
+    )
+    val categories = when (state.type) {
+        BillType.INCOME -> DefaultCategories.income
+        BillType.EXPENSE, BillType.EXCLUDED -> DefaultCategories.expense
+    }
+    IconCategoryGrid(
+        categories = categories,
+        selected = state.category,
+        onSelected = onCategorySelected,
+    )
+    Text(
+        text = if (state.note.isBlank()) "添加备注" else "备注：${state.note}",
+        color = BrandGreen,
+        modifier = Modifier
+            .padding(horizontal = 18.dp, vertical = 8.dp)
+            .clickable(onClick = onShowNoteEditor),
+    )
+    state.errorMessage?.let {
+        Text(
+            text = it,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(horizontal = 18.dp),
+        )
+    }
+    val isAmountValid = state.amountInput.toDoubleOrNull()?.let { it > 0.0 } == true
+    NumberPad(
+        onAppend = onAppendAmount,
+        onDelete = onDeleteAmount,
+        onConfirm = onSave,
+        confirmEnabled = isAmountValid,
+        confirmText = if (state.editingRecordId == null) "确定" else "保存",
+    )
+}
 @Composable
 private fun ModeSegment(text: String, selected: Boolean, onClick: () -> Unit) {
     Text(
@@ -1236,8 +1400,11 @@ private fun ModeSegment(text: String, selected: Boolean, onClick: () -> Unit) {
             .clip(RoundedCornerShape(4.dp))
             .background(if (selected) SoftGreen else Color(0xFFF7F7F7))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+        style = MaterialTheme.typography.bodyMedium,
         fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Clip,
     )
 }
 
@@ -1264,8 +1431,7 @@ private fun IconCategoryGrid(
                     ) {
                         CategoryIcon(
                             category = category.id,
-                            backgroundColor = if (isSelected) BrandGreen else CategoryInactiveGray,
-                            contentAlpha = if (isSelected) 1f else 0.36f,
+                            contentAlpha = if (isSelected) 1f else 0.42f,
                             modifier = Modifier
                                 .size(34.dp),
                         )
@@ -1296,10 +1462,9 @@ private fun NumberPad(
     confirmText: String = "确定",
 ) {
     val rows = listOf(
-        listOf("1", "2", "3", "⌫"),
-        listOf("4", "5", "6", "确定"),
-        listOf("7", "8", "9", "确定"),
-        listOf("0", "0", ".", "确定"),
+        listOf("1", "2", "3"),
+        listOf("4", "5", "6"),
+        listOf("7", "8", "9"),
     )
     Row(
         modifier = Modifier
@@ -1307,19 +1472,28 @@ private fun NumberPad(
             .padding(horizontal = 6.dp, vertical = 8.dp),
     ) {
         Column(modifier = Modifier.weight(3f)) {
-            rows.forEachIndexed { rowIndex, row ->
+            rows.forEach { row ->
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    row.take(3).forEachIndexed { index, key ->
-                        val label = if (rowIndex == 3 && index == 1) "" else key
+                    row.forEach { key ->
                         NumberKey(
-                            text = label,
+                            text = key,
                             modifier = Modifier.weight(1f),
-                            onClick = {
-                                if (label.isNotBlank()) onAppend(label)
-                            },
+                            onClick = { onAppend(key) },
                         )
                     }
                 }
+            }
+            Row(modifier = Modifier.fillMaxWidth()) {
+                NumberKey(
+                    text = "0",
+                    modifier = Modifier.weight(2f),
+                    onClick = { onAppend("0") },
+                )
+                NumberKey(
+                    text = ".",
+                    modifier = Modifier.weight(1f),
+                    onClick = { onAppend(".") },
+                )
             }
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -1348,7 +1522,6 @@ private fun NumberPad(
         }
     }
 }
-
 @Composable
 private fun NumberKey(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(

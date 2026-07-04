@@ -52,6 +52,17 @@ The app SHALL 在本次变更中使用 Android 默认启动图标作为分类图
 - **WHEN** UI 需要显示该分类的图标
 - **THEN** 代码实现 SHALL 引用 `R.mipmap.ic_launcher`
 
+### Requirement: 启动页
+
+The app SHALL 在启动时先展示启动页 Activity，然后进入主页面。
+
+#### Scenario: 用户打开 App 进入启动页
+
+- **GIVEN** 用户点击桌面图标打开 App
+- **WHEN** App 启动
+- **THEN** App SHALL 首先打开启动页 Activity
+- **AND** 启动页 SHALL 使用 `assets/splash.png` 对应的设计图作为全屏背景
+- **AND** 启动页 SHALL 短暂停留后自动进入主页面
 ### Requirement: 默认页面状态和底部导航
 
 The app SHALL 提供明细、统计、设置三个底部导航入口，并在首次打开时进入明细页。
