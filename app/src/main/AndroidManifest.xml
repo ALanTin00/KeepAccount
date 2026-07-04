@@ -30,7 +30,7 @@
             android:name=".SplashActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.KeepAccount">
+            android:theme="@style/Theme.KeepAccount.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

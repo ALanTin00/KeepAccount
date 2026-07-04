@@ -2,4 +2,12 @@
 <resources>
 
     <style name="Theme.KeepAccount" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.KeepAccount.Splash" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_window_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowDisablePreview">false</item>
+    </style>
 </resources>

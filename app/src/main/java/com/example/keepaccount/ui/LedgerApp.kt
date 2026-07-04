@@ -1,5 +1,6 @@
 package com.example.keepaccount.ui
 
+import android.app.Activity
 import androidx.annotation.DrawableRes
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -65,9 +66,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -77,6 +81,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.view.WindowCompat
 import com.example.keepaccount.AddBillActivity
 import com.example.keepaccount.CategoryDetailActivity
 import com.example.keepaccount.R
@@ -98,6 +103,31 @@ private val SoftGreen = Color(0xFFE6F6EE)
 private val MutedText = Color(0xFF8C8C8C)
 private val Divider = Color(0xFFE9E9E9)
 private val ConfirmDisabledGray = Color(0xFFE0E0E0)
+
+@Composable
+private fun SetStatusBarColor(color: Color) {
+    val context = LocalContext.current
+    val view = LocalView.current
+    if (view.isInEditMode) {
+        return
+    }
+
+    val activity = context as? Activity ?: return
+    DisposableEffect(activity, view, color) {
+        val window = activity.window
+        val previousStatusBarColor = window.statusBarColor
+        val controller = WindowCompat.getInsetsController(window, view)
+        val previousLightStatusBars = controller.isAppearanceLightStatusBars
+
+        window.statusBarColor = color.toArgb()
+        controller.isAppearanceLightStatusBars = color.luminance() > 0.5f
+
+        onDispose {
+            window.statusBarColor = previousStatusBarColor
+            controller.isAppearanceLightStatusBars = previousLightStatusBars
+        }
+    }
+}
 
 @Composable
 fun LedgerApp(
@@ -171,6 +201,7 @@ fun AddBillActivityContent(
     viewModel: LedgerViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    SetStatusBarColor(Color.White)
 
     LaunchedEffect(initialMonth) {
         viewModel.openAddBillForMonth(initialMonth)
@@ -181,7 +212,7 @@ fun AddBillActivityContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Transparent),
+            .background(Color.White),
     ) {
         state.addBillState?.let { addState ->
             AddBillPage(
@@ -225,6 +256,7 @@ fun CategoryDetailActivityContent(
 ) {
     val state by viewModel.uiState.collectAsState()
     val detail = state.categoryDetail ?: CategoryDetailState(category = category)
+    SetStatusBarColor(Color.White)
 
     LaunchedEffect(category, type, month) {
         viewModel.openCategoryDetailForMonth(
@@ -282,9 +314,15 @@ private fun KeepAccountScreen(
     onRegenerateSeedData: () -> Unit,
 ) {
     val detail = state.categoryDetail
+    val statusBarColor = when {
+        detail != null -> Color.White
+        state.selectedTab == AppTab.SETTINGS -> Color.White
+        else -> BrandGreen
+    }
+    SetStatusBarColor(statusBarColor)
 
     Scaffold(
-        containerColor = PageBg,
+        containerColor = statusBarColor,
         bottomBar = {
             if (detail == null) {
                 BottomNavigation(

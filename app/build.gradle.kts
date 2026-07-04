@@ -21,8 +21,21 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("KaiTin") {
+            storeFile = file("KaiTin.jks")
+            storePassword = "12345678tjf"
+            keyAlias = "KaiTin"
+            keyPassword = "12345678tjf"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("KaiTin")
+        }
         release {
+            signingConfig = signingConfigs.getByName("KaiTin")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
