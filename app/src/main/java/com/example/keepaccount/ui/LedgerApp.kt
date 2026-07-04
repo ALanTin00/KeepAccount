@@ -56,6 +56,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -88,6 +89,8 @@ private val PageBg = Color(0xFFF3F4F3)
 private val SoftGreen = Color(0xFFE6F6EE)
 private val MutedText = Color(0xFF8C8C8C)
 private val Divider = Color(0xFFE9E9E9)
+private val CategoryInactiveGray = Color(0xFFEDEDED)
+private val ConfirmDisabledGray = Color(0xFFE0E0E0)
 
 @Composable
 fun LedgerApp(
@@ -595,6 +598,8 @@ private fun BillRecordRow(
 private fun CategoryIcon(
     @DrawableRes resId: Int = R.mipmap.ic_launcher,
     modifier: Modifier = Modifier,
+    backgroundColor: Color = BrandGreen,
+    contentAlpha: Float = 1f,
 ) {
     val context = LocalContext.current
     val imageBitmap = remember(resId) {
@@ -604,14 +609,16 @@ private fun CategoryIcon(
         modifier = modifier
             .size(34.dp)
             .clip(CircleShape)
-            .background(BrandGreen),
+            .background(backgroundColor),
         contentAlignment = Alignment.Center,
     ) {
         if (imageBitmap != null) {
             Image(
                 bitmap = imageBitmap,
                 contentDescription = null,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier
+                    .size(22.dp)
+                    .alpha(contentAlpha),
                 contentScale = ContentScale.Fit,
             )
         } else {
@@ -1190,10 +1197,12 @@ private fun AddBillSheet(
                     modifier = Modifier.padding(horizontal = 18.dp),
                 )
             }
+            val isAmountValid = state.amountInput.toDoubleOrNull()?.let { it > 0.0 } == true
             NumberPad(
                 onAppend = onAppendAmount,
                 onDelete = onDeleteAmount,
                 onConfirm = onSave,
+                confirmEnabled = isAmountValid,
                 confirmText = if (state.editingRecordId == null) "确定" else "保存",
             )
         }
@@ -1227,6 +1236,7 @@ private fun IconCategoryGrid(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 rowItems.forEach { category ->
+                    val isSelected = selected == category
                     Column(
                         modifier = Modifier
                             .width(52.dp)
@@ -1235,17 +1245,16 @@ private fun IconCategoryGrid(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         CategoryIcon(
+                            backgroundColor = if (isSelected) BrandGreen else CategoryInactiveGray,
+                            contentAlpha = if (isSelected) 1f else 0.36f,
                             modifier = Modifier
-                                .size(34.dp)
-                                .border(
-                                    width = if (selected == category) 2.dp else 0.dp,
-                                    color = BrandGreen,
-                                    shape = CircleShape,
-                                ),
+                                .size(34.dp),
                         )
                         Text(
                             text = category,
+                            color = if (isSelected) BrandGreen else MutedText,
                             style = MaterialTheme.typography.bodySmall,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -1264,6 +1273,7 @@ private fun NumberPad(
     onAppend: (String) -> Unit,
     onDelete: () -> Unit,
     onConfirm: () -> Unit,
+    confirmEnabled: Boolean = true,
     confirmText: String = "确定",
 ) {
     val rows = listOf(
@@ -1294,17 +1304,27 @@ private fun NumberPad(
             }
         }
         Column(modifier = Modifier.weight(1f)) {
-            NumberKey(text = "⌫", onClick = onDelete)
+            NumberKey(
+                text = "⌫",
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onDelete,
+            )
             Button(
                 onClick = onConfirm,
+                enabled = confirmEnabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(174.dp)
                     .padding(4.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF97D9B6)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandGreen,
+                    contentColor = Color.White,
+                    disabledContainerColor = ConfirmDisabledGray,
+                    disabledContentColor = Color.White,
+                ),
                 shape = RoundedCornerShape(4.dp),
             ) {
-                Text(confirmText, color = Color.White)
+                Text(confirmText)
             }
         }
     }
