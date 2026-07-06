@@ -2101,6 +2101,11 @@ private fun SettingsPage(
                 style = MaterialTheme.typography.bodySmall,
             )
             Text("备份文件：${state.backupFileName}", color = MutedText, style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = "操作指引：旧手机点击“生成数据库数据”，把生成的备份文件复制到新手机上方目录；新手机点击“读取数据库数据”即可导入，导入完成后页面会自动刷新，无需重启 App。",
+                color = MutedText,
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
         Spacer(modifier = Modifier.height(20.dp))
         Button(
