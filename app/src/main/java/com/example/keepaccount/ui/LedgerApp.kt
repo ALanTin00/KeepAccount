@@ -1,14 +1,21 @@
 package com.example.keepaccount.ui
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.annotation.DrawableRes
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -76,6 +83,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import com.example.keepaccount.AddBillActivity
 import com.example.keepaccount.CategoryDetailActivity
@@ -2074,12 +2082,33 @@ private fun SettingsPage(
     onImportDatabaseData: () -> Unit,
     onRegenerateSeedData: () -> Unit,
 ) {
+    val context = LocalContext.current
     var pendingAction by remember { mutableStateOf<SettingsDangerAction?>(null) }
+    var pendingStorageAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val storagePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            pendingStorageAction?.invoke()
+        }
+        pendingStorageAction = null
+    }
+    fun runWithDownloadPermission(action: () -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        ) {
+            action()
+        } else {
+            pendingStorageAction = action
+            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -2102,14 +2131,14 @@ private fun SettingsPage(
             )
             Text("备份文件：${state.backupFileName}", color = MutedText, style = MaterialTheme.typography.bodySmall)
             Text(
-                text = "操作指引：旧手机点击“生成数据库数据”，把生成的备份文件复制到新手机上方目录；新手机点击“读取数据库数据”即可导入，导入完成后页面会自动刷新，无需重启 App。",
+                text = "操作指引：点击“生成数据库数据”会把备份文件保存到 Download/KeepAccount；换手机时把 keep_account_backup.json 放到新手机同一目录，再点击“读取数据库数据”导入。Android 10 及以上无需权限，Android 9 及以下会申请存储权限；导入完成后页面会自动刷新，无需重启 App。",
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
         Button(
-            onClick = onExportDatabaseData,
+            onClick = { runWithDownloadPermission(onExportDatabaseData) },
             enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()
@@ -2121,7 +2150,7 @@ private fun SettingsPage(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = onImportDatabaseData,
+            onClick = { runWithDownloadPermission(onImportDatabaseData) },
             enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()

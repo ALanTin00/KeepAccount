@@ -41,7 +41,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _uiState = MutableStateFlow(
         LedgerUiState(
-            backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+            backupDirectoryPath = backupManager.backupDirectoryLabel,
             backupFileName = BillBackupManager.BACKUP_FILE_NAME,
         ),
     )
@@ -413,7 +413,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 it.copy(
                     isBackupWorking = false,
                     settingsMessage = message,
-                    backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+                    backupDirectoryPath = backupManager.backupDirectoryLabel,
                     backupFileName = BillBackupManager.BACKUP_FILE_NAME,
                 )
             }
@@ -446,7 +446,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 it.copy(
                     isBackupWorking = false,
                     settingsMessage = message,
-                    backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+                    backupDirectoryPath = backupManager.backupDirectoryLabel,
                     backupFileName = BillBackupManager.BACKUP_FILE_NAME,
                 )
             }

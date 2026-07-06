@@ -1,6 +1,11 @@
 package com.example.keepaccount.data
 
+import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONException
@@ -12,46 +17,40 @@ class BillBackupManager(
     private val appContext = context.applicationContext
 
     val backupDirectory: File
-        get() = File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, BACKUP_DIRECTORY_NAME)
+        get() = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), BACKUP_DIRECTORY_NAME)
 
     val backupFile: File
         get() = File(backupDirectory, BACKUP_FILE_NAME)
 
-    fun export(records: List<BillRecordEntity>): BackupExportResult {
-        val directory = backupDirectory
-        if (!directory.exists() && !directory.mkdirs()) {
-            throw BackupException("备份目录创建失败：${directory.absolutePath}")
-        }
+    val backupDirectoryLabel: String
+        get() = "Download/$BACKUP_DIRECTORY_NAME"
 
-        val file = backupFile
+    fun export(records: List<BillRecordEntity>): BackupExportResult {
         val backup = BillBackupFile(
             version = CURRENT_BACKUP_VERSION,
             exportedAt = System.currentTimeMillis(),
             records = records.map { it.toBackupRecord() },
         )
-        runCatching {
-            file.writeText(backup.toJson().toString(JSON_INDENT_SPACES), Charsets.UTF_8)
-        }.getOrElse {
-            throw BackupException("备份文件写入失败：${it.localizedMessage ?: "未知错误"}")
+        val content = backup.toJson().toString(JSON_INDENT_SPACES)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            writeToDownloadsWithMediaStore(content)
+        } else {
+            writeToDownloadsWithFile(content)
         }
 
         return BackupExportResult(
-            filePath = file.absolutePath,
-            directoryPath = directory.absolutePath,
+            filePath = "$backupDirectoryLabel/$BACKUP_FILE_NAME",
+            directoryPath = backupDirectoryLabel,
             recordCount = records.size,
         )
     }
 
     fun readRecords(): List<BillRecordEntity> {
-        val file = backupFile
-        if (!file.exists()) {
-            throw BackupException("没有找到备份文件，请先把 $BACKUP_FILE_NAME 放到 ${backupDirectory.absolutePath}")
-        }
-
-        val content = runCatching {
-            file.readText(Charsets.UTF_8)
-        }.getOrElse {
-            throw BackupException("备份文件读取失败：${it.localizedMessage ?: "未知错误"}")
+        val content = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            readFromDownloadsWithMediaStore()
+        } else {
+            readFromDownloadsWithFile()
         }
 
         val backup = runCatching {
@@ -68,10 +67,98 @@ class BillBackupManager(
         return backup.records.map { it.toEntity() }
     }
 
+    private fun writeToDownloadsWithMediaStore(content: String) {
+        val resolver = appContext.contentResolver
+        findDownloadBackupUri()?.let { resolver.delete(it, null, null) }
+
+        val values = ContentValues().apply {
+            put(MediaStore.Downloads.DISPLAY_NAME, BACKUP_FILE_NAME)
+            put(MediaStore.Downloads.MIME_TYPE, BACKUP_MIME_TYPE)
+            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$BACKUP_DIRECTORY_NAME")
+            put(MediaStore.Downloads.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            ?: throw BackupException("备份文件创建失败")
+
+        runCatching {
+            resolver.openOutputStream(uri, "wt")?.use { output ->
+                output.write(content.toByteArray(Charsets.UTF_8))
+            } ?: throw BackupException("备份文件打开失败")
+            ContentValues().apply {
+                put(MediaStore.Downloads.IS_PENDING, 0)
+            }.also { resolver.update(uri, it, null, null) }
+        }.getOrElse {
+            resolver.delete(uri, null, null)
+            throw BackupException("备份文件写入失败：${it.localizedMessage ?: "未知错误"}")
+        }
+    }
+
+    private fun writeToDownloadsWithFile(content: String) {
+        val directory = backupDirectory
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw BackupException("备份目录创建失败：${directory.absolutePath}")
+        }
+
+        runCatching {
+            backupFile.writeText(content, Charsets.UTF_8)
+        }.getOrElse {
+            throw BackupException("备份文件写入失败：${it.localizedMessage ?: "未知错误"}")
+        }
+    }
+
+    private fun readFromDownloadsWithMediaStore(): String {
+        val uri = findDownloadBackupUri()
+            ?: throw BackupException("没有找到备份文件，请先把 $BACKUP_FILE_NAME 放到 $backupDirectoryLabel")
+
+        return runCatching {
+            appContext.contentResolver.openInputStream(uri)?.use { input ->
+                input.reader(Charsets.UTF_8).readText()
+            } ?: throw BackupException("备份文件打开失败")
+        }.getOrElse {
+            throw BackupException("备份文件读取失败：${it.localizedMessage ?: "未知错误"}")
+        }
+    }
+
+    private fun readFromDownloadsWithFile(): String {
+        val file = backupFile
+        if (!file.exists()) {
+            throw BackupException("没有找到备份文件，请先把 $BACKUP_FILE_NAME 放到 ${backupDirectory.absolutePath}")
+        }
+
+        return runCatching {
+            file.readText(Charsets.UTF_8)
+        }.getOrElse {
+            throw BackupException("备份文件读取失败：${it.localizedMessage ?: "未知错误"}")
+        }
+    }
+
+    private fun findDownloadBackupUri(): Uri? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
+
+        val projection = arrayOf(MediaStore.Downloads._ID)
+        val selection = "${MediaStore.Downloads.DISPLAY_NAME}=? AND ${MediaStore.Downloads.RELATIVE_PATH}=?"
+        val selectionArgs = arrayOf(BACKUP_FILE_NAME, "${Environment.DIRECTORY_DOWNLOADS}/$BACKUP_DIRECTORY_NAME/")
+        val sortOrder = "${MediaStore.Downloads.DATE_MODIFIED} DESC"
+        appContext.contentResolver.query(
+            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            sortOrder,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
+                return Uri.withAppendedPath(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id.toString())
+            }
+        }
+        return null
+    }
+
     companion object {
-        const val BACKUP_DIRECTORY_NAME = "backup"
+        const val BACKUP_DIRECTORY_NAME = "KeepAccount"
         const val BACKUP_FILE_NAME = "keep_account_backup.json"
         const val CURRENT_BACKUP_VERSION = 1
+        const val BACKUP_MIME_TYPE = "application/json"
         private const val JSON_INDENT_SPACES = 2
     }
 }
