@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,12 +73,8 @@ internal fun SettingsPage(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(68.dp))
-        CategoryIcon(modifier = Modifier.size(54.dp))
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("设置", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("管理本地 Room 账单数据", color = MutedText)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text("\u8bbe\u7f6e", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(24.dp))
         Column(
             modifier = Modifier.fillMaxWidth(),

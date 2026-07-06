@@ -139,10 +139,8 @@ internal fun StatisticsHeader(
             .fillMaxWidth()
             .height(330.dp)
             .background(BrandGreen)
-            .padding(start = 20.dp, end = 20.dp, top = 28.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 10.dp),
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-        Spacer(modifier = Modifier.height(68.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = "${month.year}年${month.monthValue}月",
