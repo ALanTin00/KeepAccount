@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.keepaccount.data.AppDatabase
+import com.example.keepaccount.data.BackupException
+import com.example.keepaccount.data.BillBackupManager
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillRepository
 import com.example.keepaccount.data.BillType
@@ -30,13 +32,19 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
     private val repository = BillRepository(
         AppDatabase.getInstance(application).billRecordDao(),
     )
+    private val backupManager = BillBackupManager(application)
     private val zoneId = ZoneId.systemDefault()
     private val preferences = application.getSharedPreferences("keep_account_settings", Context.MODE_PRIVATE)
     private var observeLedgerAllJob: Job? = null
     private var observeStatisticsJob: Job? = null
     private var observeStatisticsRangeJob: Job? = null
 
-    private val _uiState = MutableStateFlow(LedgerUiState())
+    private val _uiState = MutableStateFlow(
+        LedgerUiState(
+            backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+            backupFileName = BillBackupManager.BACKUP_FILE_NAME,
+        ),
+    )
     val uiState: StateFlow<LedgerUiState> = _uiState.asStateFlow()
 
     init {
@@ -118,15 +126,10 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
     fun openAddBillForMonth(month: YearMonth) {
         _uiState.update {
             val today = LocalDate.now()
-            val defaultDate = if (YearMonth.from(today) == month) {
-                today
-            } else {
-                month.atDay(1)
-            }
             it.copy(
                 addBillState = AddBillState(
-                    date = defaultDate,
-                    calendarMonth = YearMonth.from(defaultDate),
+                    date = today,
+                    calendarMonth = YearMonth.from(today),
                 ),
             )
         }
@@ -292,7 +295,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 )
             }
             _uiState.update { it.copy(addBillState = null) }
-            refreshLedgerRecords()
             onSaved?.invoke()
         }
     }
@@ -371,7 +373,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             repository.deleteRecord(record.id)
             _uiState.update { it.copy(recordDetail = null) }
-            refreshLedgerRecords()
         }
     }
 
@@ -393,6 +394,65 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun exportDatabaseData() {
+        if (_uiState.value.isBackupWorking) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isBackupWorking = true,
+                    settingsMessage = "正在生成数据库数据...",
+                )
+            }
+            val message = runCatching {
+                val result = backupManager.export(repository.getAllRecords())
+                "已生成数据库数据，共 ${result.recordCount} 条\n目录：${result.directoryPath}\n文件：${BillBackupManager.BACKUP_FILE_NAME}"
+            }.getOrElse {
+                "生成失败：${it.localizedMessage ?: "未知错误"}"
+            }
+            _uiState.update {
+                it.copy(
+                    isBackupWorking = false,
+                    settingsMessage = message,
+                    backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+                    backupFileName = BillBackupManager.BACKUP_FILE_NAME,
+                )
+            }
+        }
+    }
+
+    fun importDatabaseData() {
+        if (_uiState.value.isBackupWorking) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isBackupWorking = true,
+                    settingsMessage = "正在读取数据库数据...",
+                )
+            }
+            val message = runCatching {
+                val records = backupManager.readRecords()
+                val result = repository.importRecords(records)
+                observeLedgerMonth()
+                observeStatisticsMonth()
+                "读取完成，导入 ${result.importedCount} 条，跳过重复 ${result.skippedDuplicateCount} 条\n当前页面已刷新，无需重启 App"
+            }.getOrElse {
+                val reason = when (it) {
+                    is BackupException -> it.message ?: "备份文件无效"
+                    else -> it.localizedMessage ?: "未知错误"
+                }
+                "读取失败：$reason"
+            }
+            _uiState.update {
+                it.copy(
+                    isBackupWorking = false,
+                    settingsMessage = message,
+                    backupDirectoryPath = backupManager.backupDirectory.absolutePath,
+                    backupFileName = BillBackupManager.BACKUP_FILE_NAME,
+                )
+            }
+        }
+    }
+
     fun clearSettingsMessage() {
         _uiState.update { it.copy(settingsMessage = null) }
     }
@@ -407,58 +467,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 _uiState.update { it.copy(ledgerAllRecords = records) }
             }
         }
-        refreshLedgerRecords()
-    }
-
-    fun refreshLedgerRecords() {
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    isLedgerRefreshing = true,
-                    ledgerPage = 0,
-                    hasMoreLedgerRecords = true,
-                )
-            }
-            val page = loadLedgerPage(offset = 0)
-            _uiState.update {
-                it.copy(
-                    ledgerRecords = page,
-                    ledgerPage = 1,
-                    hasMoreLedgerRecords = page.size == LEDGER_PAGE_SIZE,
-                    isLedgerRefreshing = false,
-                )
-            }
-        }
-    }
-
-    fun loadMoreLedgerRecords() {
-        val state = _uiState.value
-        if (state.isLedgerLoadingMore || state.isLedgerRefreshing || !state.hasMoreLedgerRecords) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLedgerLoadingMore = true) }
-            val page = loadLedgerPage(offset = state.ledgerPage * LEDGER_PAGE_SIZE)
-            _uiState.update {
-                it.copy(
-                    ledgerRecords = it.ledgerRecords + page,
-                    ledgerPage = it.ledgerPage + 1,
-                    hasMoreLedgerRecords = page.size == LEDGER_PAGE_SIZE,
-                    isLedgerLoadingMore = false,
-                )
-            }
-        }
-    }
-
-    private suspend fun loadLedgerPage(offset: Int): List<BillRecordEntity> {
-        val state = _uiState.value
-        val start = state.selectedMonth.atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-        val end = state.selectedMonth.plusMonths(1).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-        return repository.getRecordsPageForMonth(
-            startMillis = start,
-            endMillis = end,
-            category = state.selectedCategory,
-            limit = LEDGER_PAGE_SIZE,
-            offset = offset,
-        )
     }
 
     private fun seedDemoDataIfNeeded() {
@@ -511,12 +519,7 @@ data class LedgerUiState(
     val monthPickerTarget: MonthPickerTarget? = null,
     val selectedCategory: Int? = null,
     val isTypeFilterVisible: Boolean = false,
-    val ledgerRecords: List<BillRecordEntity> = emptyList(),
     val ledgerAllRecords: List<BillRecordEntity> = emptyList(),
-    val ledgerPage: Int = 0,
-    val hasMoreLedgerRecords: Boolean = true,
-    val isLedgerRefreshing: Boolean = false,
-    val isLedgerLoadingMore: Boolean = false,
     val statisticsRecords: List<BillRecordEntity> = emptyList(),
     val statisticsRangeRecords: List<BillRecordEntity> = emptyList(),
     val addBillState: AddBillState? = null,
@@ -524,6 +527,9 @@ data class LedgerUiState(
     val categoryDetail: CategoryDetailState? = null,
     val recordDetail: BillRecordEntity? = null,
     val settingsMessage: String? = null,
+    val backupDirectoryPath: String = "",
+    val backupFileName: String = "",
+    val isBackupWorking: Boolean = false,
 )
 
 data class AddBillState(
@@ -552,7 +558,6 @@ enum class AppTab {
     SETTINGS,
 }
 
-private const val LEDGER_PAGE_SIZE = 20
 private const val KEY_SEED_DATA_INSERTED = "seed_data_inserted"
 
 enum class MonthPickerTarget {

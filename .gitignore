@@ -11,6 +11,7 @@ captures/
 local.properties
 *.iml
 .idea/
+.codex-temp/
 
 # Generated packages and reports
 *.apk

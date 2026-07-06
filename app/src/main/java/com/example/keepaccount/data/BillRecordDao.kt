@@ -3,6 +3,7 @@ package com.example.keepaccount.data
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -25,6 +26,26 @@ interface BillRecordDao {
 
     @Query("SELECT COUNT(*) FROM bill_records WHERE occurredAt >= :startMillis AND occurredAt < :endMillis")
     suspend fun countBetween(startMillis: Long, endMillis: Long): Int
+
+    @Query("SELECT * FROM bill_records ORDER BY occurredAt DESC, id DESC")
+    suspend fun getAllRecords(): List<BillRecordEntity>
+
+    @Transaction
+    suspend fun insertDeduplicated(records: List<BillRecordEntity>): ImportRecordsResult {
+        if (records.isEmpty()) {
+            return ImportRecordsResult(importedCount = 0, skippedDuplicateCount = 0)
+        }
+
+        val existingKeys = getAllRecords().map { it.contentKey() }.toMutableSet()
+        val newRecords = records.filter { existingKeys.add(it.contentKey()) }
+        if (newRecords.isNotEmpty()) {
+            insertAll(newRecords)
+        }
+        return ImportRecordsResult(
+            importedCount = newRecords.size,
+            skippedDuplicateCount = records.size - newRecords.size,
+        )
+    }
 
     @Query(
         """
@@ -53,25 +74,16 @@ interface BillRecordDao {
         """
         SELECT * FROM bill_records
         WHERE occurredAt >= :startMillis AND occurredAt < :endMillis
-            AND (:category IS NULL OR category = :category)
-        ORDER BY occurredAt DESC, id DESC
-        LIMIT :limit OFFSET :offset
-        """,
-    )
-    suspend fun getRecordsPageForMonthAndCategory(
-        startMillis: Long,
-        endMillis: Long,
-        category: Int?,
-        limit: Int,
-        offset: Int,
-    ): List<BillRecordEntity>
-
-    @Query(
-        """
-        SELECT * FROM bill_records
-        WHERE occurredAt >= :startMillis AND occurredAt < :endMillis
         ORDER BY occurredAt ASC, id ASC
         """,
     )
     fun observeRecordsBetween(startMillis: Long, endMillis: Long): Flow<List<BillRecordEntity>>
 }
+
+data class ImportRecordsResult(
+    val importedCount: Int,
+    val skippedDuplicateCount: Int,
+)
+
+private fun BillRecordEntity.contentKey(): String =
+    listOf(type.name, category, amountCents, occurredAt, note, createdAt).joinToString(separator = "|")

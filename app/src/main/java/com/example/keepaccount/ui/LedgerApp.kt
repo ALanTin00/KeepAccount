@@ -29,7 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -52,7 +51,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -72,9 +70,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -135,17 +130,6 @@ fun LedgerApp(
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshLedgerRecords()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
 
     KeepAccountScreen(
         state = state,
@@ -189,7 +173,8 @@ fun LedgerApp(
         onCloseRecordDetail = viewModel::closeRecordDetail,
         onDeleteRecord = viewModel::deleteSelectedRecord,
         onEditRecord = viewModel::editSelectedRecord,
-        onLoadMoreLedger = viewModel::loadMoreLedgerRecords,
+        onExportDatabaseData = viewModel::exportDatabaseData,
+        onImportDatabaseData = viewModel::importDatabaseData,
         onRegenerateSeedData = viewModel::regenerateSeedData,
     )
 }
@@ -310,7 +295,8 @@ private fun KeepAccountScreen(
     onCloseRecordDetail: () -> Unit,
     onDeleteRecord: () -> Unit,
     onEditRecord: () -> Unit,
-    onLoadMoreLedger: () -> Unit,
+    onExportDatabaseData: () -> Unit,
+    onImportDatabaseData: () -> Unit,
     onRegenerateSeedData: () -> Unit,
 ) {
     val detail = state.categoryDetail
@@ -367,7 +353,6 @@ private fun KeepAccountScreen(
                         onShowTypeFilter = onShowTypeFilter,
                         onShowMonthPicker = { onShowMonthPicker(MonthPickerTarget.LEDGER) },
                         onRecordClick = onOpenRecordDetail,
-                        onLoadMore = onLoadMoreLedger,
                     )
 
                     AppTab.STATISTICS -> StatisticsPage(
@@ -378,7 +363,9 @@ private fun KeepAccountScreen(
                     )
 
                     AppTab.SETTINGS -> SettingsPage(
-                        message = state.settingsMessage,
+                        state = state,
+                        onExportDatabaseData = onExportDatabaseData,
+                        onImportDatabaseData = onImportDatabaseData,
                         onRegenerateSeedData = onRegenerateSeedData,
                     )
                 }
@@ -449,25 +436,10 @@ private fun LedgerPage(
     onShowTypeFilter: () -> Unit,
     onShowMonthPicker: () -> Unit,
     onRecordClick: (BillRecordEntity) -> Unit,
-    onLoadMore: () -> Unit,
 ) {
     val allRecords = state.ledgerAllRecords
-    val groups = state.ledgerRecords.groupsByDay()
+    val groups = allRecords.groupsByDay()
     val categoryLabel = state.selectedCategory?.let(DefaultCategories::nameOf) ?: "全部类型"
-    val listState = rememberLazyListState()
-    val shouldLoadMore by remember {
-        derivedStateOf {
-            val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-            val total = listState.layoutInfo.totalItemsCount
-            total > 0 && lastVisible >= total - 3
-        }
-    }
-
-    LaunchedEffect(shouldLoadMore, state.hasMoreLedgerRecords, state.isLedgerLoadingMore) {
-        if (shouldLoadMore && state.hasMoreLedgerRecords && !state.isLedgerLoadingMore) {
-            onLoadMore()
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -491,13 +463,12 @@ private fun LedgerPage(
             )
         } else {
             LazyColumn(
-                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 8.dp,
                     end = 8.dp,
                     top = 8.dp,
-                    bottom = 88.dp,
+                    bottom = 10.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -505,21 +476,6 @@ private fun LedgerPage(
                     DayGroupCard(
                         group = group,
                         onRecordClick = onRecordClick,
-                    )
-                }
-                item {
-                    Text(
-                        text = when {
-                            state.isLedgerLoadingMore -> "加载中..."
-                            state.hasMoreLedgerRecords -> "继续上拉加载"
-                            else -> "没有更多了"
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp),
-                        textAlign = TextAlign.Center,
-                        color = MutedText,
-                        style = MaterialTheme.typography.bodySmall,
                     )
                 }
             }
@@ -682,9 +638,10 @@ private fun DayGroupCard(
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            group.records.forEach { record ->
+            group.records.forEachIndexed { index, record ->
                 BillRecordRow(
                     record = record,
+                    showDivider = index != group.records.lastIndex,
                     onClick = { onRecordClick(record) },
                 )
             }
@@ -695,6 +652,7 @@ private fun DayGroupCard(
 @Composable
 private fun BillRecordRow(
     record: BillRecordEntity,
+    showDivider: Boolean,
     onClick: () -> Unit,
 ) {
     Row(
@@ -733,13 +691,15 @@ private fun BillRecordRow(
             fontWeight = FontWeight.SemiBold,
         )
     }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .padding(start = 70.dp)
-            .background(Divider),
-    )
+    if (showDivider) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .padding(start = 70.dp)
+                .background(Divider),
+        )
+    }
 }
 
 @Composable
@@ -903,13 +863,12 @@ private fun StatisticsHeader(
         Spacer(modifier = Modifier.height(68.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${month.year}年${month.monthValue}月  ▣",
+                text = "${month.year}年${month.monthValue}月",
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(onClick = onShowMonthPicker),
+                modifier = Modifier.clickable(onClick = onShowMonthPicker),
             )
+            Spacer(modifier = Modifier.weight(1f))
             ModeButton(
                 text = "支出",
                 selected = mode == BillType.EXPENSE,
@@ -2110,7 +2069,9 @@ private fun BottomNavigation(
 
 @Composable
 private fun SettingsPage(
-    message: String?,
+    state: LedgerUiState,
+    onExportDatabaseData: () -> Unit,
+    onImportDatabaseData: () -> Unit,
     onRegenerateSeedData: () -> Unit,
 ) {
     var pendingAction by remember { mutableStateOf<SettingsDangerAction?>(null) }
@@ -2128,9 +2089,47 @@ private fun SettingsPage(
         Text("设置", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text("管理本地 Room 账单数据", color = MutedText)
-        Spacer(modifier = Modifier.height(34.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("备份目录", fontWeight = FontWeight.SemiBold)
+            Text(
+                text = state.backupDirectoryPath,
+                color = MutedText,
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text("备份文件：${state.backupFileName}", color = MutedText, style = MaterialTheme.typography.bodySmall)
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onExportDatabaseData,
+            enabled = !state.isBackupWorking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(if (state.isBackupWorking) "处理中..." else "生成数据库数据")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onImportDatabaseData,
+            enabled = !state.isBackupWorking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text("读取数据库数据")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { pendingAction = SettingsDangerAction.REGENERATE_SEED },
+            enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -2139,7 +2138,7 @@ private fun SettingsPage(
         ) {
             Text("重新生成 2024/2025 测试数据")
         }
-        if (message != null) {
+        state.settingsMessage?.let { message ->
             Spacer(modifier = Modifier.height(20.dp))
             Text(
                 text = message,

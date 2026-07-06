@@ -12,20 +12,14 @@ class BillRepository(
     ): Flow<List<BillRecordEntity>> =
         dao.observeRecordsForMonthAndCategory(startMillis, endMillis, category)
 
-    suspend fun getRecordsPageForMonth(
-        startMillis: Long,
-        endMillis: Long,
-        category: Int?,
-        limit: Int,
-        offset: Int,
-    ): List<BillRecordEntity> =
-        dao.getRecordsPageForMonthAndCategory(startMillis, endMillis, category, limit, offset)
-
     fun observeRecordsBetween(
         startMillis: Long,
         endMillis: Long,
     ): Flow<List<BillRecordEntity>> =
         dao.observeRecordsBetween(startMillis, endMillis)
+
+    suspend fun getAllRecords(): List<BillRecordEntity> =
+        dao.getAllRecords()
 
     suspend fun addRecord(
         type: BillType,
@@ -34,6 +28,7 @@ class BillRepository(
         note: String,
         occurredAt: Long,
     ) {
+        val now = System.currentTimeMillis()
         dao.insert(
             BillRecordEntity(
                 id = 0,
@@ -42,8 +37,8 @@ class BillRepository(
                 amountCents = amountCents,
                 note = note,
                 occurredAt = occurredAt,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis(),
+                createdAt = now,
+                updatedAt = now,
             ),
         )
     }
@@ -63,6 +58,9 @@ class BillRepository(
     suspend fun addRecords(records: List<BillRecordEntity>) {
         dao.insertAll(records)
     }
+
+    suspend fun importRecords(records: List<BillRecordEntity>): ImportRecordsResult =
+        dao.insertDeduplicated(records)
 
     suspend fun countRecordsBetween(startMillis: Long, endMillis: Long): Int =
         dao.countBetween(startMillis, endMillis)
