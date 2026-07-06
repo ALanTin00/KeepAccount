@@ -303,6 +303,18 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(statisticsMode = type) }
     }
 
+    fun openStatisticsMonth(type: BillType, month: YearMonth) {
+        _uiState.update {
+            it.copy(
+                selectedTab = AppTab.STATISTICS,
+                statisticsMode = type,
+                statisticsMonth = month,
+                categoryDetail = null,
+            )
+        }
+        observeStatisticsMonth()
+    }
+
     fun openCategoryDetail(category: Int) {
         _uiState.update {
             it.copy(

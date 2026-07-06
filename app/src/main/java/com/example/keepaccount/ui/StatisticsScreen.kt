@@ -1,8 +1,10 @@
 package com.example.keepaccount.ui
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,27 +19,46 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
 import com.example.keepaccount.data.DefaultCategories
 import com.example.keepaccount.data.label
+import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.math.PI
+import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 internal fun StatisticsPage(
@@ -45,10 +66,36 @@ internal fun StatisticsPage(
     onShowMonthPicker: () -> Unit,
     onSwitchMode: (BillType) -> Unit,
     onOpenCategoryDetail: (Int) -> Unit,
+    onOpenMonthlyRanking: (YearMonth) -> Unit,
 ) {
     val records = state.statisticsRecords.filter { it.type == state.statisticsMode }
     val summaries = state.statisticsRecords.categorySummaries(state.statisticsMode)
     val total = records.sumOf { it.amountCents }
+    val dailyItems = remember(records, state.statisticsMonth) {
+        dailyPoints(records, state.statisticsMonth)
+    }
+    val monthlyItems = remember(state.statisticsRangeRecords, state.statisticsMonth, state.statisticsMode) {
+        monthlyPoints(
+            records = state.statisticsRangeRecords,
+            month = state.statisticsMonth,
+            mode = state.statisticsMode,
+        )
+    }
+    var rankingMonth by remember { mutableStateOf(state.statisticsMonth) }
+    LaunchedEffect(state.statisticsMonth, state.statisticsMode) {
+        rankingMonth = state.statisticsMonth
+    }
+    val rankingRecords = remember(state.statisticsRangeRecords, state.statisticsMode, rankingMonth) {
+        state.statisticsRangeRecords
+            .filter { record -> record.type == state.statisticsMode && YearMonth.from(record.localDate()) == rankingMonth }
+            .sortedWith(
+                compareByDescending<BillRecordEntity> { it.amountCents }
+                    .thenByDescending { it.occurredAt },
+            )
+    }
+    val previewRankingRecords = remember(rankingRecords) {
+        rankingRecords.take(MONTHLY_RANKING_PREVIEW_LIMIT)
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -83,7 +130,7 @@ internal fun StatisticsPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(230.dp)
-                        .padding(horizontal = 18.dp),
+                        .padding(horizontal = 8.dp),
                 )
             }
             items(summaries) { summary ->
@@ -96,34 +143,59 @@ internal fun StatisticsPage(
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 StatisticsSectionTitle("每日对比")
-                BarChart(
-                    points = dailyPoints(records, state.statisticsMonth),
+                DailyComparisonChart(
+                    points = dailyItems,
+                    mode = state.statisticsMode,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(230.dp)
-                        .padding(horizontal = 20.dp),
+                        .padding(horizontal = 14.dp),
                 )
                 StatisticsSectionTitle("月度对比")
-                BarChart(
-                    points = monthlyPoints(
-                        records = state.statisticsRangeRecords,
-                        month = state.statisticsMonth,
-                        mode = state.statisticsMode,
-                    ),
+                MonthlyComparisonChart(
+                    points = monthlyItems,
+                    selectedMonth = rankingMonth,
+                    mode = state.statisticsMode,
+                    onMonthSelected = { rankingMonth = it },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(230.dp)
-                        .padding(horizontal = 20.dp),
-                    emphasizeLast = true,
+                        .padding(horizontal = 14.dp),
                 )
-                Text(
-                    text = "${state.statisticsMonth.monthValue}月${state.statisticsMode.label()}排行",
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-                    color = MutedText,
+                StatisticsSectionTitle("${rankingMonth.monthValue}月${state.statisticsMode.label()}排行")
+            }
+            itemsIndexed(previewRankingRecords) { index, record ->
+                RankingRecordRow(
+                    rank = index + 1,
+                    record = record,
+                )
+            }
+            item {
+                MonthlyRankingFooter(
+                    visible = rankingRecords.isNotEmpty(),
+                    onClick = { onOpenMonthlyRanking(rankingMonth) },
                 )
             }
         }
     }
+}
+
+@Composable
+private fun MonthlyRankingFooter(
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    if (!visible) return
+    Text(
+        text = "全部排行 〉",
+        color = MutedText,
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(top = 6.dp, bottom = 10.dp),
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable
@@ -137,9 +209,8 @@ internal fun StatisticsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(330.dp)
             .background(BrandGreen)
-            .padding(start = 20.dp, end = 20.dp, top = 10.dp),
+            .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -202,16 +273,24 @@ internal fun StatisticsSectionTitle(text: String) {
 
 @Composable
 internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = Modifier) {
-    val colors = listOf(
-        BrandGreen,
-        Color(0xFF74D29C),
-        Color(0xFF9ADCB7),
-        Color(0xFFBFEAD0),
-        Color(0xFFDDF5E8),
-    )
+    val colors = chartColors()
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.size(150.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            if (summaries.isEmpty()) return@Canvas
+
+            val strokeWidth = 30.dp.toPx()
+            val radius = min(size.width, size.height) * 0.26f
+            val center = Offset(size.width / 2f, size.height / 2f + 8.dp.toPx())
+            val arcTopLeft = Offset(center.x - radius, center.y - radius)
+            val arcSize = Size(radius * 2f, radius * 2f)
+            val labels = mutableListOf<DonutLabel>()
+            val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 10.dp.toPx()
+                color = MutedText.toArgbInt()
+            }
+            val chartEdgePadding = 6.dp.toPx()
             var startAngle = -90f
+
             summaries.forEachIndexed { index, item ->
                 val sweep = item.percent * 360f
                 drawArc(
@@ -219,10 +298,69 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
                     startAngle = startAngle,
                     sweepAngle = sweep,
                     useCenter = false,
-                    style = Stroke(width = 34.dp.toPx(), cap = StrokeCap.Butt),
-                    size = Size(size.width, size.height),
+                    topLeft = arcTopLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
+                )
+
+                val midAngle = startAngle + sweep / 2f
+                val radians = midAngle.toRadians()
+                val side = if (cos(radians) >= 0f) DonutLabelSide.RIGHT else DonutLabelSide.LEFT
+                val labelText = "${DefaultCategories.nameOf(item.category)} ${"%.2f".format(item.percent * 100)}%"
+                val labelWidth = textPaint.measureText(labelText)
+                labels += DonutLabel(
+                    text = labelText,
+                    labelWidth = labelWidth,
+                    color = colors[index % colors.size],
+                    anchor = Offset(
+                        x = center.x + cos(radians) * (radius + strokeWidth / 2f),
+                        y = center.y + sin(radians) * (radius + strokeWidth / 2f),
+                    ),
+                    elbow = Offset(
+                        x = center.x + cos(radians) * (radius + strokeWidth / 2f + 16.dp.toPx()),
+                        y = center.y + sin(radians) * (radius + strokeWidth / 2f + 16.dp.toPx()),
+                    ),
+                    labelX = if (side == DonutLabelSide.RIGHT) {
+                        min(size.width - chartEdgePadding - labelWidth, center.x + radius + 70.dp.toPx())
+                    } else {
+                        max(chartEdgePadding + labelWidth, center.x - radius - 70.dp.toPx())
+                    },
+                    desiredY = center.y + sin(radians) * (radius + 36.dp.toPx()),
+                    side = side,
                 )
                 startAngle += sweep
+            }
+
+            val adjustedLabels = adjustDonutLabels(
+                labels = labels,
+                minY = 16.dp.toPx(),
+                maxY = size.height - 12.dp.toPx(),
+                spacing = 16.dp.toPx(),
+            )
+            adjustedLabels.forEach { label ->
+                val labelEnd = Offset(
+                    x = if (label.side == DonutLabelSide.RIGHT) label.labelX - 4.dp.toPx() else label.labelX + 4.dp.toPx(),
+                    y = label.adjustedY,
+                )
+                drawLine(
+                    color = label.color.copy(alpha = 0.55f),
+                    start = label.anchor,
+                    end = label.elbow,
+                    strokeWidth = 1.dp.toPx(),
+                )
+                drawLine(
+                    color = label.color.copy(alpha = 0.55f),
+                    start = label.elbow,
+                    end = labelEnd,
+                    strokeWidth = 1.dp.toPx(),
+                )
+                textPaint.textAlign = if (label.side == DonutLabelSide.RIGHT) Paint.Align.LEFT else Paint.Align.RIGHT
+                drawContext.canvas.nativeCanvas.drawText(
+                    label.text,
+                    label.labelX,
+                    label.adjustedY + 3.dp.toPx(),
+                    textPaint,
+                )
             }
         }
         if (summaries.isEmpty()) {
@@ -281,75 +419,394 @@ internal fun CategorySummaryRow(
 }
 
 @Composable
-internal fun BarChart(
-    points: List<ChartPoint>,
+private fun DailyComparisonChart(
+    points: List<DailyChartPoint>,
+    mode: BillType,
     modifier: Modifier = Modifier,
-    emphasizeLast: Boolean = false,
+) {
+    var selectedIndex by remember { mutableStateOf(points.defaultSelectedDailyIndex()) }
+    LaunchedEffect(points) {
+        selectedIndex = points.defaultSelectedDailyIndex()
+    }
+
+    InteractiveBarChart(
+        points = points,
+        selectedIndex = selectedIndex,
+        onSelected = { selectedIndex = it },
+        mode = mode,
+        modifier = modifier,
+        tooltipTitle = { point -> "${point.date.monthValue}月${point.date.dayOfMonth}日共${mode.label()}" },
+        showTooltip = true,
+        showValueLabels = false,
+        xLabelStep = max(1, points.size / 6),
+        horizontalHitScale = DAILY_BAR_HORIZONTAL_HIT_SCALE,
+    )
+}
+
+@Composable
+private fun MonthlyComparisonChart(
+    points: List<MonthlyChartPoint>,
+    selectedMonth: YearMonth,
+    mode: BillType,
+    onMonthSelected: (YearMonth) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var selectedIndex by remember { mutableStateOf(points.indexOfMonth(selectedMonth)) }
+    LaunchedEffect(points, selectedMonth, mode) {
+        selectedIndex = points.indexOfMonth(selectedMonth)
+    }
+
+    InteractiveBarChart(
+        points = points,
+        selectedIndex = selectedIndex,
+        onSelected = { index ->
+            selectedIndex = index
+            points.getOrNull(index)?.let { onMonthSelected(it.month) }
+        },
+        mode = mode,
+        modifier = modifier,
+        tooltipTitle = { point -> "${point.label}${mode.label()}" },
+        showTooltip = false,
+        showValueLabels = true,
+        xLabelStep = 1,
+    )
+}
+
+@Composable
+private fun <T : ChartPoint> InteractiveBarChart(
+    points: List<T>,
+    selectedIndex: Int?,
+    onSelected: (Int) -> Unit,
+    mode: BillType,
+    modifier: Modifier = Modifier,
+    tooltipTitle: (T) -> String,
+    showTooltip: Boolean,
+    showValueLabels: Boolean,
+    xLabelStep: Int,
+    horizontalHitScale: Float = DEFAULT_BAR_HORIZONTAL_HIT_SCALE,
 ) {
     val maxValue = points.maxOfOrNull { it.value }?.takeIf { it > 0 } ?: 1L
-    val labelStep = max(1, points.size / 6)
+    val selectedPoint = selectedIndex?.let { points.getOrNull(it) }
     Column(modifier = modifier) {
+        if (!showTooltip && selectedPoint != null) {
+            Text(
+                text = centsText(selectedPoint.value),
+                color = BrandGreen,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(start = 22.dp, bottom = 2.dp),
+            )
+        }
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .weight(1f)
+                .pointerInput(points, maxValue, showTooltip, horizontalHitScale) {
+                    detectTapGestures { offset ->
+                        val hitBoxes = buildBarHitBoxes(
+                            points = points,
+                            maxValue = maxValue,
+                            width = size.width.toFloat(),
+                            height = size.height.toFloat(),
+                            density = this,
+                            showTooltip = showTooltip,
+                            horizontalHitScale = horizontalHitScale,
+                        )
+                        hitBoxes.firstOrNull { it.contains(offset) }?.let { onSelected(it.index) }
+                    }
+                },
         ) {
-            val barGap = 6.dp.toPx()
-            val availableWidth = size.width
-            val barWidth = ((availableWidth - barGap * (points.size - 1)) / points.size)
-                .coerceAtLeast(2.dp.toPx())
+            if (points.isEmpty()) return@Canvas
+
+            val leftAxis = 42.dp.toPx()
+            val topPadding = if (showTooltip) 56.dp.toPx() else 24.dp.toPx()
+            val bottomAxis = 24.dp.toPx()
+            val chartWidth = size.width - leftAxis
+            val chartHeight = size.height - topPadding - bottomAxis
+            val chartTop = topPadding
+            val chartBottom = chartTop + chartHeight
+            val slotWidth = chartWidth / points.size
+            val barWidth = min(18.dp.toPx(), (slotWidth * 0.42f).coerceAtLeast(3.dp.toPx()))
+            val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 9.dp.toPx()
+                color = MutedText.toArgbInt()
+            }
+            val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textSize = 9.dp.toPx()
+                color = BrandGreen.toArgbInt()
+                textAlign = Paint.Align.CENTER
+            }
+
             repeat(5) { line ->
-                val y = size.height * line / 4f
+                val fraction = line / 4f
+                val y = chartTop + chartHeight * fraction
                 drawLine(
                     color = Divider,
-                    start = Offset(0f, y),
+                    start = Offset(leftAxis, y),
                     end = Offset(size.width, y),
                     strokeWidth = 1.dp.toPx(),
                 )
+                val tick = (maxValue * (4 - line) / 4f).roundToLong()
+                axisPaint.textAlign = Paint.Align.RIGHT
+                drawContext.canvas.nativeCanvas.drawText(
+                    axisCentsText(tick),
+                    leftAxis - 6.dp.toPx(),
+                    y + 3.dp.toPx(),
+                    axisPaint,
+                )
             }
+
             points.forEachIndexed { index, point ->
                 val ratio = point.value.toFloat() / maxValue.toFloat()
-                val height = (size.height * 0.88f * ratio).coerceAtLeast(if (point.value > 0) 3.dp.toPx() else 0f)
-                val x = index * (barWidth + barGap)
-                val y = size.height - height
-                drawRect(
-                    color = if (emphasizeLast && index == points.lastIndex) BrandGreen else Color(0xFFCDEEDD),
+                val height = (chartHeight * 0.86f * ratio).coerceAtLeast(if (point.value > 0) 3.dp.toPx() else 0f)
+                val centerX = leftAxis + slotWidth * index + slotWidth / 2f
+                val x = centerX - barWidth / 2f
+                val y = chartBottom - height
+                val selected = index == selectedIndex
+                val hasSelection = selectedIndex != null
+                val barColor = when {
+                    selected -> BrandGreen
+                    hasSelection -> BrandGreen.copy(alpha = 0.22f)
+                    else -> Color(0xFFCDEEDD)
+                }
+                drawRoundRect(
+                    color = barColor,
                     topLeft = Offset(x, y),
                     size = Size(barWidth, height),
+                    cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
                 )
+
+                if (showValueLabels && point.value > 0) {
+                    valuePaint.color = if (selected) BrandGreen.toArgbInt() else BrandGreen.copy(alpha = 0.62f).toArgbInt()
+                    drawContext.canvas.nativeCanvas.drawText(
+                        centsText(point.value),
+                        centerX,
+                        (y - 6.dp.toPx()).coerceAtLeast(10.dp.toPx()),
+                        valuePaint,
+                    )
+                }
+
+                val showXLabel = index == 0 || index == points.lastIndex || index % xLabelStep == 0
+                if (showXLabel) {
+                    axisPaint.textAlign = Paint.Align.CENTER
+                    drawContext.canvas.nativeCanvas.drawText(
+                        point.label,
+                        centerX,
+                        size.height - 5.dp.toPx(),
+                        axisPaint,
+                    )
+                }
             }
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(22.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            points.forEachIndexed { index, point ->
-                val showLabel = index == 0 || index == points.lastIndex || index % labelStep == 0
-                Text(
-                    text = if (showLabel) point.label else "",
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MutedText,
-                    maxLines = 1,
-                )
+
+            if (showTooltip) {
+                val tooltipIndex = selectedIndex
+                val tooltipPoint = tooltipIndex?.let { points.getOrNull(it) }
+                if (tooltipIndex != null && tooltipPoint != null) {
+                    val selectedCenterX = leftAxis + slotWidth * tooltipIndex + slotWidth / 2f
+                    val selectedHeight = (chartHeight * 0.86f * (tooltipPoint.value.toFloat() / maxValue.toFloat()))
+                        .coerceAtLeast(if (tooltipPoint.value > 0) 3.dp.toPx() else 0f)
+                    val selectedTop = chartBottom - selectedHeight
+                    drawChartTooltip(
+                        anchorX = selectedCenterX,
+                        anchorY = selectedTop,
+                        title = tooltipTitle(tooltipPoint),
+                        amount = centsText(tooltipPoint.value),
+                        mode = mode,
+                        minX = leftAxis,
+                        maxX = size.width,
+                    )
+                }
             }
         }
     }
 }
 
+private fun DrawScope.drawChartTooltip(
+    anchorX: Float,
+    anchorY: Float,
+    title: String,
+    amount: String,
+    mode: BillType,
+    minX: Float,
+    maxX: Float,
+) {
+    val tooltipWidth = 112.dp.toPx()
+    val tooltipHeight = 48.dp.toPx()
+    val tooltipX = (anchorX - tooltipWidth / 2f).coerceIn(minX, maxX - tooltipWidth)
+    val tooltipY = (anchorY - tooltipHeight - 10.dp.toPx()).coerceAtLeast(4.dp.toPx())
+    val pointerX = anchorX.coerceIn(tooltipX + 8.dp.toPx(), tooltipX + tooltipWidth - 8.dp.toPx())
+    val tooltipColor = Color(0xFF333333)
+    drawRoundRect(
+        color = tooltipColor,
+        topLeft = Offset(tooltipX, tooltipY),
+        size = Size(tooltipWidth, tooltipHeight),
+        cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx()),
+    )
+    val triangleTop = tooltipY + tooltipHeight - 1.dp.toPx()
+    val triangle = Path().apply {
+        moveTo(pointerX - 5.dp.toPx(), triangleTop)
+        lineTo(pointerX + 5.dp.toPx(), triangleTop)
+        lineTo(pointerX, tooltipY + tooltipHeight + 7.dp.toPx())
+        close()
+    }
+    drawPath(triangle, tooltipColor)
 
-data class ChartPoint(
-    val label: String,
-    val value: Long,
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        textSize = 10.dp.toPx()
+        color = Color.White.toArgbInt()
+    }
+    drawContext.canvas.nativeCanvas.drawText(
+        title,
+        tooltipX + tooltipWidth / 2f,
+        tooltipY + 18.dp.toPx(),
+        paint,
+    )
+    paint.color = (if (mode == BillType.EXPENSE) BrandGreen else Color(0xFF8BC9FF)).toArgbInt()
+    paint.textSize = 11.dp.toPx()
+    paint.isFakeBoldText = true
+    drawContext.canvas.nativeCanvas.drawText(
+        amount,
+        tooltipX + tooltipWidth / 2f,
+        tooltipY + 34.dp.toPx(),
+        paint,
+    )
+}
+
+@Composable
+private fun RankingRecordRow(
+    rank: Int,
+    record: BillRecordEntity,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = rank.toString(),
+            modifier = Modifier.width(22.dp),
+            color = MutedText,
+            style = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        CategoryIcon(category = record.category, modifier = Modifier.size(40.dp))
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = DefaultCategories.nameOf(record.category),
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = record.note.ifBlank { record.dateTimeText() },
+                color = MutedText,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = signedCentsText(record),
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = record.dateTimeText(),
+                color = MutedText,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+internal interface ChartPoint {
+    val label: String
+    val value: Long
+}
+
+internal data class DailyChartPoint(
+    val date: LocalDate,
+    override val label: String,
+    override val value: Long,
+) : ChartPoint
+
+internal data class MonthlyChartPoint(
+    val month: YearMonth,
+    override val label: String,
+    override val value: Long,
+) : ChartPoint
+
+private fun <T : ChartPoint> buildBarHitBoxes(
+    points: List<T>,
+    maxValue: Long,
+    width: Float,
+    height: Float,
+    density: Density,
+    showTooltip: Boolean,
+    horizontalHitScale: Float,
+): List<BarHitBox> = with(density) {
+    if (points.isEmpty()) return@with emptyList()
+    val leftAxis = 42.dp.toPx()
+    val topPadding = if (showTooltip) 56.dp.toPx() else 24.dp.toPx()
+    val bottomAxis = 24.dp.toPx()
+    val chartWidth = width - leftAxis
+    val chartHeight = height - topPadding - bottomAxis
+    if (chartWidth <= 0f || chartHeight <= 0f) return@with emptyList()
+    val chartBottom = topPadding + chartHeight
+    val slotWidth = chartWidth / points.size
+    val barWidth = min(18.dp.toPx(), (slotWidth * 0.42f).coerceAtLeast(3.dp.toPx()))
+    val hitWidth = max(barWidth, slotWidth * horizontalHitScale.coerceIn(0f, 1f))
+    points.mapIndexed { index, point ->
+        val ratio = point.value.toFloat() / maxValue.toFloat()
+        val barHeight = (chartHeight * 0.86f * ratio).coerceAtLeast(if (point.value > 0) 3.dp.toPx() else 0f)
+        val centerX = leftAxis + slotWidth * index + slotWidth / 2f
+        BarHitBox(
+            index = index,
+            left = centerX - hitWidth / 2f,
+            top = chartBottom - barHeight,
+            right = centerX + hitWidth / 2f,
+            bottom = chartBottom,
+        )
+    }
+}
+
+private data class BarHitBox(
+    val index: Int,
+    val left: Float,
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+) {
+    fun contains(offset: Offset): Boolean =
+        offset.x in left..right && offset.y in top..bottom
+}
+
+private data class DonutLabel(
+    val text: String,
+    val labelWidth: Float,
+    val color: Color,
+    val anchor: Offset,
+    val elbow: Offset,
+    val labelX: Float,
+    val desiredY: Float,
+    val side: DonutLabelSide,
+    val adjustedY: Float = desiredY,
 )
 
-internal fun dailyPoints(records: List<BillRecordEntity>, month: YearMonth): List<ChartPoint> {
+private enum class DonutLabelSide {
+    LEFT,
+    RIGHT,
+}
+
+internal fun dailyPoints(records: List<BillRecordEntity>, month: YearMonth): List<DailyChartPoint> {
     val byDay = records.groupBy { it.localDate().dayOfMonth }
     return (1..month.lengthOfMonth()).map { day ->
-        ChartPoint(
+        DailyChartPoint(
+            date = month.atDay(day),
             label = day.toString(),
             value = byDay[day].orEmpty().sumOf { it.amountCents },
         )
@@ -360,16 +817,76 @@ internal fun monthlyPoints(
     records: List<BillRecordEntity>,
     month: YearMonth,
     mode: BillType,
-): List<ChartPoint> {
+): List<MonthlyChartPoint> {
     val byMonth = records
         .filter { it.type == mode }
         .groupBy { YearMonth.from(it.localDate()) }
         .mapValues { (_, monthRecords) -> monthRecords.sumOf { it.amountCents } }
     return (5 downTo 0).map { offset ->
         val targetMonth = month.minusMonths(offset.toLong())
-        ChartPoint(
+        MonthlyChartPoint(
+            month = targetMonth,
             label = "${targetMonth.monthValue}月",
             value = byMonth[targetMonth] ?: 0L,
         )
     }
 }
+
+private fun List<DailyChartPoint>.defaultSelectedDailyIndex(): Int? {
+    if (isEmpty()) return null
+    val today = LocalDate.now()
+    val todayIndex = indexOfFirst { it.date == today && it.value > 0 }
+    if (todayIndex >= 0) return todayIndex
+    return indices.maxByOrNull { this[it].value }
+}
+
+private fun List<MonthlyChartPoint>.indexOfMonth(month: YearMonth): Int? {
+    val index = indexOfFirst { it.month == month }
+    return if (index >= 0) index else indices.maxByOrNull { this[it].value }
+}
+
+private fun adjustDonutLabels(
+    labels: List<DonutLabel>,
+    minY: Float,
+    maxY: Float,
+    spacing: Float,
+): List<DonutLabel> =
+    labels.groupBy { it.side }
+        .flatMap { (_, sideLabels) ->
+            val sorted = sideLabels.sortedBy { it.desiredY }
+            val adjusted = sorted.runningFold(minY - spacing) { previous, label ->
+                max(label.desiredY, previous + spacing)
+            }.drop(1).toMutableList()
+            val overflow = (adjusted.lastOrNull() ?: minY) - maxY
+            if (overflow > 0f) {
+                adjusted.indices.forEach { index ->
+                    adjusted[index] = (adjusted[index] - overflow).coerceAtLeast(minY)
+                }
+            }
+            sorted.mapIndexed { index, label -> label.copy(adjustedY = adjusted[index].coerceIn(minY, maxY)) }
+        }
+
+private fun chartColors(): List<Color> = listOf(
+    BrandGreen,
+    Color(0xFF74D29C),
+    Color(0xFF9ADCB7),
+    Color(0xFFBFEAD0),
+    Color(0xFFDDF5E8),
+)
+
+private fun Float.toRadians(): Float = (this * PI / 180.0).toFloat()
+
+private fun axisCentsText(cents: Long): String = "¥${(cents / 100.0).roundToInt()}"
+
+private fun Float.roundToLong(): Long = roundToInt().toLong()
+
+private fun Color.toArgbInt(): Int = android.graphics.Color.argb(
+    (alpha * 255).roundToInt().coerceIn(0, 255),
+    (red * 255).roundToInt().coerceIn(0, 255),
+    (green * 255).roundToInt().coerceIn(0, 255),
+    (blue * 255).roundToInt().coerceIn(0, 255),
+)
+
+private const val MONTHLY_RANKING_PREVIEW_LIMIT = 10
+private const val DEFAULT_BAR_HORIZONTAL_HIT_SCALE = 0f
+private const val DAILY_BAR_HORIZONTAL_HIT_SCALE = 0.86f

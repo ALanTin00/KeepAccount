@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.keepaccount.AddBillActivity
 import com.example.keepaccount.CategoryDetailActivity
+import com.example.keepaccount.MonthlyRankingActivity
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
 import java.time.LocalDate
@@ -66,6 +67,15 @@ fun LedgerApp(
                     category = category,
                     type = state.statisticsMode,
                     month = state.statisticsMonth,
+                ),
+            )
+        },
+        onOpenMonthlyRanking = { month ->
+            context.startActivity(
+                MonthlyRankingActivity.createIntent(
+                    context = context,
+                    month = month,
+                    type = state.statisticsMode,
                 ),
             )
         },
@@ -191,6 +201,7 @@ private fun KeepAccountScreen(
     onDismissNoteEditor: () -> Unit,
     onSwitchStatisticsMode: (BillType) -> Unit,
     onOpenCategoryDetail: (Int) -> Unit,
+    onOpenMonthlyRanking: (YearMonth) -> Unit,
     onCloseCategoryDetail: () -> Unit,
     onSetCategoryDetailSort: (DetailSort) -> Unit,
     onOpenRecordDetail: (BillRecordEntity) -> Unit,
@@ -262,6 +273,7 @@ private fun KeepAccountScreen(
                         onShowMonthPicker = { onShowMonthPicker(MonthPickerTarget.STATISTICS) },
                         onSwitchMode = onSwitchStatisticsMode,
                         onOpenCategoryDetail = onOpenCategoryDetail,
+                        onOpenMonthlyRanking = onOpenMonthlyRanking,
                     )
 
                     AppTab.SETTINGS -> SettingsPage(
