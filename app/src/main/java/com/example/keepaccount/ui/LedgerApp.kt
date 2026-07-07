@@ -245,7 +245,7 @@ private fun KeepAccountScreen(
             if (state.selectedTab == AppTab.LEDGER && detail == null) {
                 FloatingActionButton(
                     onClick = onOpenAddBill,
-                    modifier = Modifier.padding(bottom = 8.dp),
+                    modifier = Modifier.padding(end = 16.dp, bottom = 8.dp),
                     containerColor = BrandGreen,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(28.dp),
@@ -258,7 +258,7 @@ private fun KeepAccountScreen(
                 }
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = FabPosition.End,
     ) { innerPadding ->
         Box(
             modifier = Modifier
