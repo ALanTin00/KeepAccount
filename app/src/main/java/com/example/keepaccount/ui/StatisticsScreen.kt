@@ -24,8 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
 import com.example.keepaccount.data.DefaultCategories
@@ -770,83 +769,50 @@ private fun DailyRecordDialog(
     total: Long,
     onDismiss: () -> Unit,
 ) {
-    Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.White)
-                .padding(horizontal = 26.dp, vertical = 28.dp),
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomCenter,
         ) {
-            Text(
-                text = "${date.format(DateTimeFormatter.ofPattern("yyyy年M月d日", Locale.CHINA))}共${mode.label()}${centsText(total)}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            if (records.isEmpty()) {
-                EmptyState(
-                    title = "暂无记录",
-                    subtitle = "当天没有${mode.label()}记录",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(170.dp),
-                )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 330.dp)
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    records.forEachIndexed { index, record ->
-                        DailyDialogRecordRow(
-                            rank = index + 1,
-                            record = record,
-                        )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                    .background(Color.White)
+                    .padding(horizontal = 22.dp, vertical = 12.dp),
+            ) {
+                SheetTitle("账单详情", onDismiss)
+                DetailLine(label = "日期", value = date.format(DateTimeFormatter.ofPattern("yyyy年M月d日", Locale.CHINA)))
+                DetailLine(label = "类型", value = mode.label())
+                DetailLine(label = "金额", value = centsText(total))
+                Spacer(modifier = Modifier.height(18.dp))
+                if (records.isEmpty()) {
+                    EmptyState(
+                        title = "暂无记录",
+                        subtitle = "当天没有${mode.label()}记录",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(170.dp),
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 330.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        records.forEachIndexed { index, record ->
+                            DailyDialogRecordRow(
+                                rank = index + 1,
+                                record = record,
+                            )
+                        }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(22.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(72.dp)
-                        .height(1.dp)
-                        .background(Divider),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .size(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Divider),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .width(72.dp)
-                        .height(1.dp)
-                        .background(Divider),
-                )
-            }
-            Spacer(modifier = Modifier.height(34.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .width(202.dp)
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF0F0F0),
-                    contentColor = BrandGreen,
-                ),
-                shape = RoundedCornerShape(6.dp),
-            ) {
-                Text("知道了", fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

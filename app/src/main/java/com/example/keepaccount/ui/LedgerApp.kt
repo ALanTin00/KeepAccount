@@ -11,6 +11,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.keepaccount.AddBillActivity
+import com.example.keepaccount.BeautyActivity
 import com.example.keepaccount.CategoryDetailActivity
 import com.example.keepaccount.MonthlyRankingActivity
 import com.example.keepaccount.data.BillRecordEntity
@@ -35,61 +37,64 @@ fun LedgerApp(
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    KeepAccountScreen(
-        state = state,
-        onTabSelected = viewModel::selectTab,
-        onShowTypeFilter = viewModel::showTypeFilter,
-        onDismissTypeFilter = viewModel::dismissTypeFilter,
-        onCategoryFilterSelected = viewModel::selectCategoryFilter,
-        onShowMonthPicker = viewModel::showMonthPicker,
-        onDismissMonthPicker = viewModel::dismissMonthPicker,
-        onChangeTempMonth = viewModel::changeTempMonth,
-        onConfirmMonthPicker = viewModel::confirmMonthPicker,
-        onOpenAddBill = { context.startActivity(AddBillActivity.createIntent(context, state.selectedMonth)) },
-        onCloseAddBill = viewModel::closeAddBill,
-        onUpdateAddBillType = viewModel::updateAddBillType,
-        onUpdateAddBillCategory = viewModel::updateAddBillCategory,
-        onAppendAmount = viewModel::appendAmountInput,
-        onDeleteAmount = viewModel::deleteAmountInput,
-        onSaveAddBill = viewModel::saveAddBill,
-        onShowDatePicker = viewModel::showDatePicker,
-        onDismissDatePicker = viewModel::dismissDatePicker,
-        onChangeAddBillMonth = viewModel::changeAddBillMonth,
-        onSelectAddBillDate = viewModel::selectAddBillDate,
-        onShowNoteEditor = viewModel::showNoteEditor,
-        onUpdateNoteDraft = viewModel::updateNoteDraft,
-        onConfirmNote = viewModel::confirmNote,
-        onDismissNoteEditor = viewModel::dismissNoteEditor,
-        onSwitchStatisticsMode = viewModel::switchStatisticsMode,
-        onOpenCategoryDetail = { category ->
-            context.startActivity(
-                CategoryDetailActivity.createIntent(
-                    context = context,
-                    category = category,
-                    type = state.statisticsMode,
-                    month = state.statisticsMonth,
-                ),
-            )
-        },
-        onOpenMonthlyRanking = { month ->
-            context.startActivity(
-                MonthlyRankingActivity.createIntent(
-                    context = context,
-                    month = month,
-                    type = state.statisticsMode,
-                ),
-            )
-        },
-        onCloseCategoryDetail = viewModel::closeCategoryDetail,
-        onSetCategoryDetailSort = viewModel::setCategoryDetailSort,
-        onOpenRecordDetail = viewModel::openRecordDetail,
-        onCloseRecordDetail = viewModel::closeRecordDetail,
-        onDeleteRecord = viewModel::deleteSelectedRecord,
-        onEditRecord = viewModel::editSelectedRecord,
-        onExportDatabaseData = viewModel::exportDatabaseData,
-        onImportDatabaseData = viewModel::importDatabaseData,
-        onGenerate2026FirstHalfData = viewModel::generate2026FirstHalfData,
-    )
+    CompositionLocalProvider(LocalCategoryIconTheme provides state.categoryIconTheme) {
+        KeepAccountScreen(
+            state = state,
+            onTabSelected = viewModel::selectTab,
+            onShowTypeFilter = viewModel::showTypeFilter,
+            onDismissTypeFilter = viewModel::dismissTypeFilter,
+            onCategoryFilterSelected = viewModel::selectCategoryFilter,
+            onShowMonthPicker = viewModel::showMonthPicker,
+            onDismissMonthPicker = viewModel::dismissMonthPicker,
+            onChangeTempMonth = viewModel::changeTempMonth,
+            onConfirmMonthPicker = viewModel::confirmMonthPicker,
+            onOpenAddBill = { context.startActivity(AddBillActivity.createIntent(context, state.selectedMonth)) },
+            onCloseAddBill = viewModel::closeAddBill,
+            onUpdateAddBillType = viewModel::updateAddBillType,
+            onUpdateAddBillCategory = viewModel::updateAddBillCategory,
+            onAppendAmount = viewModel::appendAmountInput,
+            onDeleteAmount = viewModel::deleteAmountInput,
+            onSaveAddBill = viewModel::saveAddBill,
+            onShowDatePicker = viewModel::showDatePicker,
+            onDismissDatePicker = viewModel::dismissDatePicker,
+            onChangeAddBillMonth = viewModel::changeAddBillMonth,
+            onSelectAddBillDate = viewModel::selectAddBillDate,
+            onShowNoteEditor = viewModel::showNoteEditor,
+            onUpdateNoteDraft = viewModel::updateNoteDraft,
+            onConfirmNote = viewModel::confirmNote,
+            onDismissNoteEditor = viewModel::dismissNoteEditor,
+            onSwitchStatisticsMode = viewModel::switchStatisticsMode,
+            onOpenCategoryDetail = { category ->
+                context.startActivity(
+                    CategoryDetailActivity.createIntent(
+                        context = context,
+                        category = category,
+                        type = state.statisticsMode,
+                        month = state.statisticsMonth,
+                    ),
+                )
+            },
+            onOpenMonthlyRanking = { month ->
+                context.startActivity(
+                    MonthlyRankingActivity.createIntent(
+                        context = context,
+                        month = month,
+                        type = state.statisticsMode,
+                    ),
+                )
+            },
+            onCloseCategoryDetail = viewModel::closeCategoryDetail,
+            onSetCategoryDetailSort = viewModel::setCategoryDetailSort,
+            onOpenRecordDetail = viewModel::openRecordDetail,
+            onCloseRecordDetail = viewModel::closeRecordDetail,
+            onDeleteRecord = viewModel::deleteSelectedRecord,
+            onEditRecord = viewModel::editSelectedRecord,
+            onExportDatabaseData = viewModel::exportDatabaseData,
+            onImportDatabaseData = viewModel::importDatabaseData,
+            onGenerate2026FirstHalfData = viewModel::generate2026FirstHalfData,
+            onOpenBeautyPage = { context.startActivity(BeautyActivity.createIntent(context)) },
+        )
+    }
 }
 
 @Composable
@@ -107,38 +112,40 @@ fun AddBillActivityContent(
 
     BackHandler(onBack = onFinish)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-    ) {
-        state.addBillState?.let { addState ->
-            AddBillPage(
-                state = addState,
-                onDismiss = onFinish,
-                onTypeSelected = viewModel::updateAddBillType,
-                onCategorySelected = viewModel::updateAddBillCategory,
-                onAppendAmount = viewModel::appendAmountInput,
-                onDeleteAmount = viewModel::deleteAmountInput,
-                onSave = { viewModel.saveAddBill(onSaved = onFinish) },
-                onShowDatePicker = viewModel::showDatePicker,
-                onShowNoteEditor = viewModel::showNoteEditor,
-            )
-            if (addState.isDatePickerVisible) {
-                DatePickerSheet(
+    CompositionLocalProvider(LocalCategoryIconTheme provides state.categoryIconTheme) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White),
+        ) {
+            state.addBillState?.let { addState ->
+                AddBillPage(
                     state = addState,
-                    onDismiss = viewModel::dismissDatePicker,
-                    onChangeMonth = viewModel::changeAddBillMonth,
-                    onDateSelected = viewModel::selectAddBillDate,
+                    onDismiss = onFinish,
+                    onTypeSelected = viewModel::updateAddBillType,
+                    onCategorySelected = viewModel::updateAddBillCategory,
+                    onAppendAmount = viewModel::appendAmountInput,
+                    onDeleteAmount = viewModel::deleteAmountInput,
+                    onSave = { viewModel.saveAddBill(onSaved = onFinish) },
+                    onShowDatePicker = viewModel::showDatePicker,
+                    onShowNoteEditor = viewModel::showNoteEditor,
                 )
-            }
-            if (addState.isNoteEditorVisible) {
-                NoteEditorSheet(
-                    note = addState.noteDraft,
-                    onValueChange = viewModel::updateNoteDraft,
-                    onDismiss = viewModel::dismissNoteEditor,
-                    onConfirm = viewModel::confirmNote,
-                )
+                if (addState.isDatePickerVisible) {
+                    DatePickerSheet(
+                        state = addState,
+                        onDismiss = viewModel::dismissDatePicker,
+                        onChangeMonth = viewModel::changeAddBillMonth,
+                        onDateSelected = viewModel::selectAddBillDate,
+                    )
+                }
+                if (addState.isNoteEditorVisible) {
+                    NoteEditorSheet(
+                        note = addState.noteDraft,
+                        onValueChange = viewModel::updateNoteDraft,
+                        onDismiss = viewModel::dismissNoteEditor,
+                        onConfirm = viewModel::confirmNote,
+                    )
+                }
             }
         }
     }
@@ -166,12 +173,14 @@ fun CategoryDetailActivityContent(
 
     BackHandler(onBack = onFinish)
 
-    CategoryDetailPage(
-        state = state,
-        detail = detail,
-        onBack = onFinish,
-        onSortSelected = viewModel::setCategoryDetailSort,
-    )
+    CompositionLocalProvider(LocalCategoryIconTheme provides state.categoryIconTheme) {
+        CategoryDetailPage(
+            state = state,
+            detail = detail,
+            onBack = onFinish,
+            onSortSelected = viewModel::setCategoryDetailSort,
+        )
+    }
 }
 
 @Composable
@@ -212,6 +221,7 @@ private fun KeepAccountScreen(
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
     onGenerate2026FirstHalfData: () -> Unit,
+    onOpenBeautyPage: () -> Unit,
 ) {
     val detail = state.categoryDetail
     val statusBarColor = when {
@@ -284,6 +294,7 @@ private fun KeepAccountScreen(
                         onExportDatabaseData = onExportDatabaseData,
                         onImportDatabaseData = onImportDatabaseData,
                         onGenerate2026FirstHalfData = onGenerate2026FirstHalfData,
+                        onOpenBeautyPage = onOpenBeautyPage,
                     )
                 }
             }

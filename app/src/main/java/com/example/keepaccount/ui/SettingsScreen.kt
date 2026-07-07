@@ -42,6 +42,7 @@ internal fun SettingsPage(
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
     onGenerate2026FirstHalfData: () -> Unit,
+    onOpenBeautyPage: () -> Unit,
 ) {
     val context = LocalContext.current
     var pendingAction by remember { mutableStateOf<SettingsDangerAction?>(null) }
@@ -94,6 +95,17 @@ internal fun SettingsPage(
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
+        Button(
+            onClick = onOpenBeautyPage,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text("佬凤爱美丽")
+        }
+        Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { runWithDownloadPermission(onExportDatabaseData) },
             enabled = !state.isBackupWorking,
@@ -165,6 +177,7 @@ internal fun SettingsPage(
         )
     }
 }
+
 
 internal enum class SettingsDangerAction(
     val title: String,

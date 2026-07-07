@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,12 +55,14 @@ fun MonthlyRankingActivityContent(
 
     BackHandler(onBack = onFinish)
 
-    MonthlyRankingPage(
-        state = state,
-        month = month,
-        type = type,
-        onBack = onFinish,
-    )
+    CompositionLocalProvider(LocalCategoryIconTheme provides state.categoryIconTheme) {
+        MonthlyRankingPage(
+            state = state,
+            month = month,
+            type = type,
+            onBack = onFinish,
+        )
+    }
 }
 
 @Composable

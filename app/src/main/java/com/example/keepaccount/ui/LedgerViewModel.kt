@@ -2,6 +2,7 @@ package com.example.keepaccount.ui
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.keepaccount.data.AppDatabase
@@ -38,9 +39,16 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
     private var observeLedgerAllJob: Job? = null
     private var observeStatisticsJob: Job? = null
     private var observeStatisticsRangeJob: Job? = null
-
+    private val preferenceChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == KEY_CATEGORY_ICON_THEME) {
+            refreshCategoryIconTheme()
+        }
+    }
     private val _uiState = MutableStateFlow(
         LedgerUiState(
+            categoryIconTheme = CategoryIconTheme.fromPreference(
+                preferences.getString(KEY_CATEGORY_ICON_THEME, null),
+            ),
             backupDirectoryPath = backupManager.backupDirectoryLabel,
             backupFileName = BillBackupManager.BACKUP_FILE_NAME,
         ),
@@ -48,6 +56,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
     val uiState: StateFlow<LedgerUiState> = _uiState.asStateFlow()
 
     init {
+        preferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
         seedDemoDataIfNeeded()
         observeLedgerMonth()
         observeStatisticsMonth()
@@ -57,6 +66,30 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
+    fun selectCategoryIconTheme(theme: CategoryIconTheme) {
+        preferences.edit()
+            .putString(KEY_CATEGORY_ICON_THEME, theme.preferenceValue)
+            .apply()
+        _uiState.update {
+            it.copy(
+                categoryIconTheme = theme,
+                settingsMessage = "分类图标已切换，无需重启 App",
+            )
+        }
+    }
+
+    fun refreshCategoryIconTheme() {
+        val theme = CategoryIconTheme.fromPreference(
+            preferences.getString(KEY_CATEGORY_ICON_THEME, null),
+        )
+        _uiState.update { state ->
+            if (state.categoryIconTheme == theme) {
+                state
+            } else {
+                state.copy(categoryIconTheme = theme)
+            }
+        }
+    }
     fun showTypeFilter() {
         _uiState.update { it.copy(isTypeFilterVisible = true) }
     }
@@ -530,6 +563,10 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }.getOrDefault(0)
     }
 
+    override fun onCleared() {
+        preferences.unregisterOnSharedPreferenceChangeListener(preferenceChangeListener)
+        super.onCleared()
+    }
 }
 
 data class LedgerUiState(
@@ -548,6 +585,7 @@ data class LedgerUiState(
     val categoryDetail: CategoryDetailState? = null,
     val recordDetail: BillRecordEntity? = null,
     val settingsMessage: String? = null,
+    val categoryIconTheme: CategoryIconTheme = CategoryIconTheme.default,
     val backupDirectoryPath: String = "",
     val backupFileName: String = "",
     val isBackupWorking: Boolean = false,
@@ -581,6 +619,7 @@ enum class AppTab {
 
 private const val KEY_SEED_DATA_INSERTED = "seed_data_inserted"
 private const val KEY_JULY_2026_DATA_INSERTED = "july_2026_data_inserted"
+private const val KEY_CATEGORY_ICON_THEME = "category_icon_theme"
 private const val MONTHLY_COMPARISON_MONTH_COUNT = 7L
 
 enum class MonthPickerTarget {

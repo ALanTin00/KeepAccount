@@ -1,6 +1,5 @@
 package com.example.keepaccount.ui
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -76,7 +75,7 @@ internal fun LedgerPage(
                     start = 8.dp,
                     end = 8.dp,
                     top = 8.dp,
-                    bottom = 112.dp,
+                    bottom = 10.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -316,7 +315,7 @@ internal fun CategoryIcon(
     modifier: Modifier = Modifier,
     contentAlpha: Float = 1f,
 ) {
-    val iconResId = categoryIconResId(category)
+    val iconResId = categoryIconResId(category, LocalCategoryIconTheme.current)
     Box(
         modifier = modifier.size(34.dp),
         contentAlignment = Alignment.Center,
@@ -338,29 +337,4 @@ internal fun CategoryIcon(
             )
         }
     }
-}
-
-@DrawableRes
-internal fun categoryIconResId(category: Int?): Int? = when (category) {
-    DefaultCategories.UNKNOWN_ID -> R.drawable.category_superhero
-    1 -> R.drawable.category_superhero
-    2 -> R.drawable.category_astronaut
-    3 -> R.drawable.category_firefighter
-    4 -> R.drawable.category_spaceman
-    5 -> R.drawable.category_lab_technician
-    6 -> R.drawable.category_ninja
-    7 -> R.drawable.category_cowboy
-    8 -> R.drawable.category_magician
-    9 -> R.drawable.category_wizard
-    10 -> R.drawable.category_musician
-    11 -> R.drawable.category_scientist
-    12 -> R.drawable.category_sailor
-    13 -> R.drawable.category_pirate
-    14 -> R.drawable.category_pilot
-    101 -> R.drawable.category_superhero
-    102 -> R.drawable.category_magician
-    103 -> R.drawable.category_wizard
-    104 -> R.drawable.category_scientist
-    105 -> R.drawable.category_cowboy
-    else -> null
 }
