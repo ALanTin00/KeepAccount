@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -87,7 +88,7 @@ fun LedgerApp(
         onEditRecord = viewModel::editSelectedRecord,
         onExportDatabaseData = viewModel::exportDatabaseData,
         onImportDatabaseData = viewModel::importDatabaseData,
-        onRegenerateSeedData = viewModel::regenerateSeedData,
+        onGenerate2026FirstHalfData = viewModel::generate2026FirstHalfData,
     )
 }
 
@@ -210,7 +211,7 @@ private fun KeepAccountScreen(
     onEditRecord: () -> Unit,
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
-    onRegenerateSeedData: () -> Unit,
+    onGenerate2026FirstHalfData: () -> Unit,
 ) {
     val detail = state.categoryDetail
     val statusBarColor = when {
@@ -234,18 +235,20 @@ private fun KeepAccountScreen(
             if (state.selectedTab == AppTab.LEDGER && detail == null) {
                 FloatingActionButton(
                     onClick = onOpenAddBill,
-                    containerColor = Color.White,
-                    contentColor = BrandGreen,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                    containerColor = BrandGreen,
+                    contentColor = Color.White,
                     shape = RoundedCornerShape(28.dp),
                 ) {
                     Text(
-                        text = "记一笔",
-                        modifier = Modifier.padding(horizontal = 12.dp),
+                        text = "记你佬味",
+                        modifier = Modifier.padding(horizontal = 18.dp),
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
         },
+        floatingActionButtonPosition = FabPosition.Center,
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -280,7 +283,7 @@ private fun KeepAccountScreen(
                         state = state,
                         onExportDatabaseData = onExportDatabaseData,
                         onImportDatabaseData = onImportDatabaseData,
-                        onRegenerateSeedData = onRegenerateSeedData,
+                        onGenerate2026FirstHalfData = onGenerate2026FirstHalfData,
                     )
                 }
             }

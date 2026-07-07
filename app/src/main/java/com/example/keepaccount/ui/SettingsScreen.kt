@@ -41,7 +41,7 @@ internal fun SettingsPage(
     state: LedgerUiState,
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
-    onRegenerateSeedData: () -> Unit,
+    onGenerate2026FirstHalfData: () -> Unit,
 ) {
     val context = LocalContext.current
     var pendingAction by remember { mutableStateOf<SettingsDangerAction?>(null) }
@@ -119,7 +119,7 @@ internal fun SettingsPage(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = { pendingAction = SettingsDangerAction.REGENERATE_SEED },
+            onClick = { pendingAction = SettingsDangerAction.GENERATE_2026_FIRST_HALF },
             enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()
@@ -127,7 +127,7 @@ internal fun SettingsPage(
             colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
             shape = RoundedCornerShape(8.dp),
         ) {
-            Text("重新生成 2024/2025 测试数据")
+            Text("生成2026年一到六月的数据")
         }
         state.settingsMessage?.let { message ->
             Spacer(modifier = Modifier.height(20.dp))
@@ -148,7 +148,9 @@ internal fun SettingsPage(
                 Button(
                     onClick = {
                         pendingAction = null
-                        onRegenerateSeedData()
+                        when (action) {
+                            SettingsDangerAction.GENERATE_2026_FIRST_HALF -> onGenerate2026FirstHalfData()
+                        }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
                 ) {
@@ -168,8 +170,8 @@ internal enum class SettingsDangerAction(
     val title: String,
     val message: String,
 ) {
-    REGENERATE_SEED(
-        title = "重新生成测试数据？",
-        message = "此操作会先清空当前账单，再写入 2024 和 2025 两年的测试数据。",
+    GENERATE_2026_FIRST_HALF(
+        title = "生成2026年一到六月的数据？",
+        message = "此操作会先替换 2026 年 1 月到 6 月的数据，再写入图片整理出的账单。",
     ),
 }

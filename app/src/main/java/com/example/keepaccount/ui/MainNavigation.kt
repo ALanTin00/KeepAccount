@@ -2,17 +2,28 @@ package com.example.keepaccount.ui
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.keepaccount.R
 
 @Composable
@@ -22,62 +33,92 @@ internal fun BottomNavigation(
 ) {
     val selectedColor = Color(0xFF008A4E)
     val unselectedColor = Color(0xFFB0B7C3)
-    val itemColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = selectedColor,
-        selectedTextColor = selectedColor,
-        unselectedIconColor = unselectedColor,
-        unselectedTextColor = unselectedColor,
-        indicatorColor = Color.Transparent,
-    )
 
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(
-            selected = selectedTab == AppTab.LEDGER,
-            onClick = { onTabSelected(AppTab.LEDGER) },
-            icon = {
-                NavigationIcon(
-                    resId = if (selectedTab == AppTab.LEDGER) {
-                        R.drawable.nav_ledger_selected
-                    } else {
-                        R.drawable.nav_ledger_unselected
-                    },
-                    tint = if (selectedTab == AppTab.LEDGER) selectedColor else unselectedColor,
-                )
-            },
-            label = { Text("\u660e\u7ec6") },
-            colors = itemColors,
+    Column(
+        modifier = Modifier
+            .background(Color.White)
+            .navigationBarsPadding(),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFFE8E8E8)),
         )
-        NavigationBarItem(
-            selected = selectedTab == AppTab.STATISTICS,
-            onClick = { onTabSelected(AppTab.STATISTICS) },
-            icon = {
-                NavigationIcon(
-                    resId = if (selectedTab == AppTab.STATISTICS) {
-                        R.drawable.nav_statistics_selected
-                    } else {
-                        R.drawable.nav_statistics_unselected
-                    },
-                    tint = if (selectedTab == AppTab.STATISTICS) selectedColor else unselectedColor,
-                )
-            },
-            label = { Text("\u7edf\u8ba1") },
-            colors = itemColors,
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(60.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BottomNavigationItem(
+                selected = selectedTab == AppTab.LEDGER,
+                selectedColor = selectedColor,
+                unselectedColor = unselectedColor,
+                selectedIcon = R.drawable.nav_ledger_selected,
+                unselectedIcon = R.drawable.nav_ledger_unselected,
+                label = "楞手佬味",
+                modifier = Modifier.weight(1f),
+                onClick = { onTabSelected(AppTab.LEDGER) },
+            )
+            BottomNavigationItem(
+                selected = selectedTab == AppTab.STATISTICS,
+                selectedColor = selectedColor,
+                unselectedColor = unselectedColor,
+                selectedIcon = R.drawable.nav_statistics_selected,
+                unselectedIcon = R.drawable.nav_statistics_unselected,
+                label = "佬味计数",
+                modifier = Modifier.weight(1f),
+                onClick = { onTabSelected(AppTab.STATISTICS) },
+            )
+            BottomNavigationItem(
+                selected = selectedTab == AppTab.SETTINGS,
+                selectedColor = selectedColor,
+                unselectedColor = unselectedColor,
+                selectedIcon = R.drawable.nav_settings_selected,
+                unselectedIcon = R.drawable.nav_settings_unselected,
+                label = "设你佬味",
+                modifier = Modifier.weight(1f),
+                onClick = { onTabSelected(AppTab.SETTINGS) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun BottomNavigationItem(
+    selected: Boolean,
+    selectedColor: Color,
+    unselectedColor: Color,
+    @DrawableRes selectedIcon: Int,
+    @DrawableRes unselectedIcon: Int,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val color = if (selected) selectedColor else unselectedColor
+    Column(
+        modifier = modifier
+            .height(60.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        NavigationIcon(
+            resId = if (selected) selectedIcon else unselectedIcon,
+            tint = color,
         )
-        NavigationBarItem(
-            selected = selectedTab == AppTab.SETTINGS,
-            onClick = { onTabSelected(AppTab.SETTINGS) },
-            icon = {
-                NavigationIcon(
-                    resId = if (selectedTab == AppTab.SETTINGS) {
-                        R.drawable.nav_settings_selected
-                    } else {
-                        R.drawable.nav_settings_unselected
-                    },
-                    tint = if (selectedTab == AppTab.SETTINGS) selectedColor else unselectedColor,
-                )
-            },
-            label = { Text("\u8bbe\u7f6e") },
-            colors = itemColors,
+        Text(
+            text = label,
+            color = color,
+            fontSize = 10.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            lineHeight = 12.sp,
         )
     }
 }
@@ -87,7 +128,7 @@ private fun NavigationIcon(@DrawableRes resId: Int, tint: Color) {
     Image(
         painter = painterResource(resId),
         contentDescription = null,
-        modifier = Modifier.size(28.dp),
+        modifier = Modifier.size(24.dp),
         colorFilter = ColorFilter.tint(tint),
     )
 }

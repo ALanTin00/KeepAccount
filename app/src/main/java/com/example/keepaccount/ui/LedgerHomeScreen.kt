@@ -66,7 +66,7 @@ internal fun LedgerPage(
         if (groups.isEmpty()) {
             EmptyState(
                 title = "暂无账单",
-                subtitle = "点击右下角记一笔，开始记录今天的收支",
+                subtitle = "点击底部记你佬味，开始记录今天的收支",
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -76,7 +76,7 @@ internal fun LedgerPage(
                     start = 8.dp,
                     end = 8.dp,
                     top = 8.dp,
-                    bottom = 10.dp,
+                    bottom = 112.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -112,7 +112,7 @@ internal fun LedgerHeader(
                 .height(44.dp),
         ) {
             Text(
-                text = "记账本",
+                text = "佬味账本",
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,

@@ -59,6 +59,14 @@ class BillRepository(
         dao.insertAll(records)
     }
 
+    suspend fun replaceRecordsBetween(
+        startMillis: Long,
+        endMillis: Long,
+        records: List<BillRecordEntity>,
+    ) {
+        dao.replaceBetween(startMillis, endMillis, records)
+    }
+
     suspend fun importRecords(records: List<BillRecordEntity>): ImportRecordsResult =
         dao.insertDeduplicated(records)
 

@@ -101,7 +101,7 @@ internal fun NoteEditorSheet(
                     modifier = Modifier.clickable(onClick = onDismiss),
                 )
                 Text(
-                    text = "添加备注",
+                    text = "佬凤日记",
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold,

@@ -24,6 +24,9 @@ interface BillRecordDao {
     @Query("DELETE FROM bill_records")
     suspend fun deleteAll()
 
+    @Query("DELETE FROM bill_records WHERE occurredAt >= :startMillis AND occurredAt < :endMillis")
+    suspend fun deleteBetween(startMillis: Long, endMillis: Long)
+
     @Query("SELECT COUNT(*) FROM bill_records WHERE occurredAt >= :startMillis AND occurredAt < :endMillis")
     suspend fun countBetween(startMillis: Long, endMillis: Long): Int
 
@@ -45,6 +48,18 @@ interface BillRecordDao {
             importedCount = newRecords.size,
             skippedDuplicateCount = records.size - newRecords.size,
         )
+    }
+
+    @Transaction
+    suspend fun replaceBetween(
+        startMillis: Long,
+        endMillis: Long,
+        records: List<BillRecordEntity>,
+    ) {
+        deleteBetween(startMillis, endMillis)
+        if (records.isNotEmpty()) {
+            insertAll(records)
+        }
     }
 
     @Query(

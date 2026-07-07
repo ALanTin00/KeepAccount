@@ -124,7 +124,7 @@ internal fun AddBillFormContent(
 ) {
     SheetCloseOnly(onDismiss)
     Text(
-        text = if (state.editingRecordId == null) "记一笔" else "编辑账单",
+        text = if (state.editingRecordId == null) "记你佬味" else "编辑账单",
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 4.dp),
@@ -173,7 +173,7 @@ internal fun AddBillFormContent(
         onSelected = onCategorySelected,
     )
     Text(
-        text = if (state.note.isBlank()) "添加备注" else "备注：${state.note}",
+        text = if (state.note.isBlank()) "佬凤日记" else "佬凤日记：${state.note}",
         color = BrandGreen,
         modifier = Modifier
             .padding(horizontal = 18.dp, vertical = 8.dp)

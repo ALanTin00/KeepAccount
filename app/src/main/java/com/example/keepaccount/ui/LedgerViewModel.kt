@@ -388,16 +388,17 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun regenerateSeedData() {
+    fun generate2026FirstHalfData() {
         viewModelScope.launch {
-            repository.deleteAllRecords()
-            repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
-            preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
+            val start = LocalDate.of(2026, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+            val end = LocalDate.of(2026, 7, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+            val records = SeedDataFactory.create2026FirstHalfRecords(zoneId)
+            repository.replaceRecordsBetween(start, end, records)
             _uiState.update {
                 it.copy(
-                    settingsMessage = "已重新生成 2024 和 2025 测试数据",
-                    selectedMonth = YearMonth.of(2025, 12),
-                    statisticsMonth = YearMonth.of(2025, 12),
+                    settingsMessage = "已生成 2026 年 1 月到 6 月数据，共 ${records.size} 条",
+                    selectedMonth = YearMonth.of(2026, 6),
+                    statisticsMonth = YearMonth.of(2026, 6),
                     selectedCategory = null,
                 )
             }
@@ -405,7 +406,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             observeStatisticsMonth()
         }
     }
-
     fun exportDatabaseData() {
         if (_uiState.value.isBackupWorking) return
         viewModelScope.launch {
@@ -483,13 +483,22 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun seedDemoDataIfNeeded() {
         viewModelScope.launch {
-            if (preferences.getBoolean(KEY_SEED_DATA_INSERTED, false)) return@launch
-            val start = LocalDate.of(2024, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-            val end = LocalDate.of(2026, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-            if (repository.countRecordsBetween(start, end) == 0) {
-                repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
+            if (!preferences.getBoolean(KEY_SEED_DATA_INSERTED, false)) {
+                val start = LocalDate.of(2024, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+                val end = LocalDate.of(2026, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+                if (repository.countRecordsBetween(start, end) == 0) {
+                    repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
+                }
+                preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
             }
-            preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
+            if (!preferences.getBoolean(KEY_JULY_2026_DATA_INSERTED, false)) {
+                val start = LocalDate.of(2026, 7, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+                val end = LocalDate.of(2026, 8, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+                if (repository.countRecordsBetween(start, end) == 0) {
+                    repository.addRecords(SeedDataFactory.createJuly2026Records(zoneId))
+                }
+                preferences.edit().putBoolean(KEY_JULY_2026_DATA_INSERTED, true).apply()
+            }
         }
     }
 
@@ -504,7 +513,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 _uiState.update { it.copy(statisticsRecords = records) }
             }
         }
-        val rangeStart = state.statisticsMonth.minusMonths(5).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val rangeStart = state.statisticsMonth.minusMonths(MONTHLY_COMPARISON_MONTH_COUNT - 1L).atDay(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         observeStatisticsRangeJob = viewModelScope.launch {
             repository.observeRecordsBetween(rangeStart, end).collectLatest { records ->
                 _uiState.update { it.copy(statisticsRangeRecords = records) }
@@ -571,6 +580,8 @@ enum class AppTab {
 }
 
 private const val KEY_SEED_DATA_INSERTED = "seed_data_inserted"
+private const val KEY_JULY_2026_DATA_INSERTED = "july_2026_data_inserted"
+private const val MONTHLY_COMPARISON_MONTH_COUNT = 7L
 
 enum class MonthPickerTarget {
     LEDGER,
