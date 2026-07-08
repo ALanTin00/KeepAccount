@@ -3,14 +3,13 @@ package com.example.keepaccount
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.example.keepaccount.ui.AddBillActivityContent
 import com.example.keepaccount.ui.theme.KeepAccountTheme
 import java.time.YearMonth
 
-class AddBillActivity : ComponentActivity() {
+class AddBillActivity : LocalizedComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

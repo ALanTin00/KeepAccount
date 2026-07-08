@@ -1,0 +1,160 @@
+<resources>
+    <string name="app_name">記你佬味</string>
+    <string name="app_add_bill">記你佬味</string>
+    <string name="app_ledger_title">佬味帳本</string>
+    <string name="tab_ledger">楞手佬味</string>
+    <string name="tab_statistics">佬味計數</string>
+    <string name="tab_settings">設你佬味</string>
+    <string name="note_label">佬鳳日記</string>
+    <string name="beauty_title">佬鳳愛美麗</string>
+    <string name="language_title">佬味口音</string>
+
+    <string name="bill_type_expense">支出</string>
+    <string name="bill_type_income">入帳</string>
+    <string name="bill_type_excluded">不計入收支</string>
+    <string name="category_dining">餐飲</string>
+    <string name="category_traffic">交通</string>
+    <string name="category_shopping">購物</string>
+    <string name="category_utilities">生活繳費</string>
+    <string name="category_medical">醫療</string>
+    <string name="category_clothing">服飾</string>
+    <string name="category_entertainment">娛樂</string>
+    <string name="category_service">服務</string>
+    <string name="category_education">教育</string>
+    <string name="category_sports">運動</string>
+    <string name="category_travel">旅行</string>
+    <string name="category_pets">寵物</string>
+    <string name="category_insurance">保險</string>
+    <string name="category_charity">公益</string>
+    <string name="category_salary">薪資</string>
+    <string name="category_bonus">獎金</string>
+    <string name="category_refund">退款</string>
+    <string name="category_investment">投資</string>
+    <string name="category_other">其他</string>
+    <string name="category_unknown">未知分類</string>
+
+    <string name="common_confirm">確定</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_save">儲存</string>
+    <string name="common_selected">已選</string>
+    <string name="common_switch">切換</string>
+    <string name="common_none">無</string>
+    <string name="common_processing">處理中...</string>
+    <string name="common_unknown_error">未知錯誤</string>
+    <string name="sort_by_amount">按金額</string>
+    <string name="sort_by_time">按時間</string>
+
+    <string name="format_year_month">%1$d年%2$d月</string>
+    <string name="format_month_day">%1$d月%2$d日</string>
+    <string name="format_month_day_time">%1$d月%2$d日 %3$s</string>
+    <string name="format_full_date">%1$d年%2$d月%3$d日</string>
+    <string name="format_day_title">%1$d月%2$d日%3$s %4$s</string>
+    <string name="format_year_label">%1$d年</string>
+    <string name="format_total_type">共%1$s</string>
+    <string name="format_month_category_total_type">%1$d月%2$s共%3$s</string>
+    <string name="format_month_total_type">%1$d月共%2$s</string>
+    <string name="format_ranking_title">%1$d月%2$s排行</string>
+    <string name="format_day_total_type">%1$d月%2$d日共%3$s</string>
+    <string name="format_month_label">%1$d月</string>
+    <string name="format_note_with_value">佬鳳日記：%1$s</string>
+    <string name="relative_today">今天</string>
+    <string name="relative_yesterday">昨天</string>
+    <string name="weekday_monday">星期一</string>
+    <string name="weekday_tuesday">星期二</string>
+    <string name="weekday_wednesday">星期三</string>
+    <string name="weekday_thursday">星期四</string>
+    <string name="weekday_friday">星期五</string>
+    <string name="weekday_saturday">星期六</string>
+    <string name="weekday_sunday">星期日</string>
+    <string name="weekday_short_sunday">日</string>
+    <string name="weekday_short_monday">一</string>
+    <string name="weekday_short_tuesday">二</string>
+    <string name="weekday_short_wednesday">三</string>
+    <string name="weekday_short_thursday">四</string>
+    <string name="weekday_short_friday">五</string>
+    <string name="weekday_short_saturday">六</string>
+
+    <string name="select_type">請選擇類型</string>
+    <string name="all_types">全部類型</string>
+    <string name="select_time">請選擇時間</string>
+    <string name="select_month">選擇月份</string>
+    <string name="previous_month">上月</string>
+    <string name="next_month">下月</string>
+
+    <string name="ledger_no_bills_title">暫無帳單</string>
+    <string name="ledger_no_bills_subtitle">點擊底部記你佬味，開始記錄今天的收支</string>
+    <string name="ledger_total_expense">總支出%1$s</string>
+    <string name="ledger_total_income">總入帳%1$s</string>
+    <string name="ledger_day_expense">出 %1$s</string>
+    <string name="ledger_day_income">入 %1$s</string>
+
+    <string name="add_bill_edit_title">編輯帳單</string>
+    <string name="add_bill_invalid_amount">請輸入有效金額</string>
+    <string name="note_placeholder">輸入備註內容</string>
+
+    <string name="detail_title">帳單詳情</string>
+    <string name="detail_type">類型</string>
+    <string name="detail_category">分類</string>
+    <string name="detail_amount">金額</string>
+    <string name="detail_date">日期</string>
+    <string name="detail_note">備註</string>
+    <string name="detail_edit_bill">編輯帳單</string>
+    <string name="detail_delete_bill">刪除帳單</string>
+    <string name="detail_delete_confirm">確認刪除帳單？</string>
+
+    <string name="category_detail_empty_title">暫無明細</string>
+    <string name="category_detail_empty_subtitle">這個分類下還沒有帳單記錄</string>
+
+    <string name="statistics_empty_title">暫無統計資料</string>
+    <string name="statistics_empty_subtitle">新增帳單後，這裡會自動產生圖表</string>
+    <string name="statistics_expense_composition">支出構成</string>
+    <string name="statistics_income_composition">入帳構成</string>
+    <string name="statistics_daily_comparison">每日對比</string>
+    <string name="statistics_monthly_comparison">月度對比</string>
+    <string name="statistics_all_ranking">全部排行 〉</string>
+    <string name="statistics_no_data">暫無資料</string>
+    <string name="statistics_daily_empty_title">暫無記錄</string>
+    <string name="statistics_daily_empty_subtitle">當天沒有%1$s記錄</string>
+    <string name="ranking_empty_title">暫無排行</string>
+    <string name="ranking_empty_subtitle">這個月份還沒有%1$s帳單</string>
+
+    <string name="settings_backup_directory">備份目錄</string>
+    <string name="settings_backup_file">備份檔案：%1$s</string>
+    <string name="settings_backup_guide">操作指引：點擊「生成資料庫資料」會把備份檔案儲存到 Download/KeepAccount；換手機時把 keep_account_backup.json 放到新手機同一目錄，再點擊「讀取資料庫資料」匯入。Android 10 及以上無需權限，Android 9 及以下會申請儲存權限；匯入完成後頁面會自動重新整理，無需重啟 App。</string>
+    <string name="settings_export_database">生成資料庫資料</string>
+    <string name="settings_import_database">讀取資料庫資料</string>
+    <string name="settings_generate_2026_title">生成2026年一到六月的資料？</string>
+    <string name="settings_generate_2026_message">此操作會先替換 2026 年 1 月到 6 月的資料，再寫入圖片整理出的帳單。</string>
+    <string name="settings_category_theme_changed">分類圖示已切換，無需重啟 App</string>
+    <string name="settings_generated_2026_success">已生成 2026 年 1 月到 6 月資料，共 %1$d 筆</string>
+    <string name="settings_exporting_database">正在生成資料庫資料...</string>
+    <string name="settings_export_database_success">已生成資料庫資料，共 %1$d 筆\n目錄：%2$s\n檔案：%3$s</string>
+    <string name="settings_export_database_failure">生成失敗：%1$s</string>
+    <string name="settings_importing_database">正在讀取資料庫資料...</string>
+    <string name="settings_import_database_success">讀取完成，匯入 %1$d 筆，跳過重複 %2$d 筆\n目前頁面已重新整理，無需重啟 App</string>
+    <string name="settings_import_database_failure">讀取失敗：%1$s</string>
+
+    <string name="backup_file_invalid">備份檔案無效</string>
+    <string name="backup_file_not_json">備份檔案不是合法 JSON</string>
+    <string name="backup_file_create_failed">備份檔案建立失敗</string>
+    <string name="backup_file_open_failed">備份檔案開啟失敗</string>
+    <string name="backup_file_write_failed">備份檔案寫入失敗：%1$s</string>
+    <string name="backup_directory_create_failed">備份目錄建立失敗：%1$s</string>
+    <string name="backup_file_missing_download">沒有找到備份檔案，請先把 %1$s 放到 %2$s</string>
+    <string name="backup_file_read_failed">備份檔案讀取失敗：%1$s</string>
+    <string name="backup_file_version_invalid">備份檔案版本無效</string>
+    <string name="backup_file_version_too_high">備份檔案版本過高，請升級 App 後再匯入</string>
+    <string name="backup_record_format_invalid">第 %1$d 筆帳單格式錯誤</string>
+    <string name="backup_record_type_invalid">第 %1$d 筆帳單類型無效</string>
+    <string name="backup_file_missing_field">備份檔案缺少欄位：%1$s</string>
+    <string name="backup_file_field_invalid">備份檔案欄位無效：%1$s</string>
+
+    <string name="beauty_category_icons">分類圖示</string>
+
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_traditional_chinese">繁体中文</string>
+    <string name="language_english">English</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_no_restart_needed">切換後會立即重新整理，無需重啟 App</string>
+</resources>

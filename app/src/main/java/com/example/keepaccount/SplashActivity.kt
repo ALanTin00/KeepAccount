@@ -9,10 +9,9 @@ import android.view.WindowInsetsController
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.activity.ComponentActivity
 import androidx.core.view.WindowCompat
 
-class SplashActivity : ComponentActivity() {
+class SplashActivity : LocalizedComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

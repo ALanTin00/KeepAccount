@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.keepaccount.R
 import com.example.keepaccount.data.DefaultCategories
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,9 +37,9 @@ internal fun TypeFilterSheet(
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
         ) {
-            SheetTitle("请选择类型", onDismiss)
+            SheetTitle(stringResource(R.string.select_type), onDismiss)
             Text(
-                text = "全部类型",
+                text = stringResource(R.string.all_types),
                 modifier = Modifier
                     .padding(horizontal = 16.dp, vertical = 12.dp)
                     .clip(RoundedCornerShape(4.dp))
@@ -48,7 +50,7 @@ internal fun TypeFilterSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "支出",
+                text = stringResource(R.string.bill_type_expense),
                 color = MutedText,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
@@ -58,7 +60,7 @@ internal fun TypeFilterSheet(
                 onSelected = { onCategorySelected(it) },
             )
             Text(
-                text = "入账",
+                text = stringResource(R.string.bill_type_income),
                 color = MutedText,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )

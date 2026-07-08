@@ -24,7 +24,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     androidResources {
-        localeFilters += listOf("zh")
+        localeFilters += listOf("zh", "zh-rTW", "en", "ja", "ko")
     }
 
     signingConfigs {

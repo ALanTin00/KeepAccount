@@ -18,13 +18,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.keepaccount.AddBillActivity
 import com.example.keepaccount.BeautyActivity
 import com.example.keepaccount.CategoryDetailActivity
+import com.example.keepaccount.LanguageActivity
 import com.example.keepaccount.MonthlyRankingActivity
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
 import java.time.LocalDate
@@ -91,8 +94,8 @@ fun LedgerApp(
             onEditRecord = viewModel::editSelectedRecord,
             onExportDatabaseData = viewModel::exportDatabaseData,
             onImportDatabaseData = viewModel::importDatabaseData,
-            onGenerate2026FirstHalfData = viewModel::generate2026FirstHalfData,
             onOpenBeautyPage = { context.startActivity(BeautyActivity.createIntent(context)) },
+            onOpenLanguagePage = { context.startActivity(LanguageActivity.createIntent(context)) },
         )
     }
 }
@@ -220,8 +223,8 @@ private fun KeepAccountScreen(
     onEditRecord: () -> Unit,
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
-    onGenerate2026FirstHalfData: () -> Unit,
     onOpenBeautyPage: () -> Unit,
+    onOpenLanguagePage: () -> Unit,
 ) {
     val detail = state.categoryDetail
     val statusBarColor = when {
@@ -251,7 +254,7 @@ private fun KeepAccountScreen(
                     shape = RoundedCornerShape(28.dp),
                 ) {
                     Text(
-                        text = "记你佬味",
+                        text = stringResource(R.string.app_add_bill),
                         modifier = Modifier.padding(horizontal = 18.dp),
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -293,8 +296,8 @@ private fun KeepAccountScreen(
                         state = state,
                         onExportDatabaseData = onExportDatabaseData,
                         onImportDatabaseData = onImportDatabaseData,
-                        onGenerate2026FirstHalfData = onGenerate2026FirstHalfData,
                         onOpenBeautyPage = onOpenBeautyPage,
+                        onOpenLanguagePage = onOpenLanguagePage,
                     )
                 }
             }

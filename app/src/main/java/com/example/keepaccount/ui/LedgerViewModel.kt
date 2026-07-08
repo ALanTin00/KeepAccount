@@ -2,9 +2,12 @@ package com.example.keepaccount.ui
 
 import android.app.Application
 import android.content.Context
+import androidx.annotation.StringRes
 import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.keepaccount.AppLocaleManager
+import com.example.keepaccount.R
 import com.example.keepaccount.data.AppDatabase
 import com.example.keepaccount.data.BackupException
 import com.example.keepaccount.data.BillBackupManager
@@ -73,7 +76,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update {
             it.copy(
                 categoryIconTheme = theme,
-                settingsMessage = "分类图标已切换，无需重启 App",
+                settingsMessage = localizedString(R.string.settings_category_theme_changed),
             )
         }
     }
@@ -295,7 +298,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         val amountCents = parseAmountCents(form.amountInput)
         if (amountCents <= 0) {
             _uiState.update { state ->
-                state.copy(addBillState = form.copy(errorMessage = "请输入有效金额"))
+                state.copy(addBillState = form.copy(errorMessage = localizedString(R.string.add_bill_invalid_amount)))
             }
             return
         }
@@ -429,7 +432,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             repository.replaceRecordsBetween(start, end, records)
             _uiState.update {
                 it.copy(
-                    settingsMessage = "已生成 2026 年 1 月到 6 月数据，共 ${records.size} 条",
+                    settingsMessage = localizedString(R.string.settings_generated_2026_success, records.size),
                     selectedMonth = YearMonth.of(2026, 6),
                     statisticsMonth = YearMonth.of(2026, 6),
                     selectedCategory = null,
@@ -445,14 +448,14 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.update {
                 it.copy(
                     isBackupWorking = true,
-                    settingsMessage = "正在生成数据库数据...",
+                    settingsMessage = localizedString(R.string.settings_exporting_database),
                 )
             }
             val message = runCatching {
                 val result = backupManager.export(repository.getAllRecords())
-                "已生成数据库数据，共 ${result.recordCount} 条\n目录：${result.directoryPath}\n文件：${BillBackupManager.BACKUP_FILE_NAME}"
+                localizedString(R.string.settings_export_database_success, result.recordCount, result.directoryPath, BillBackupManager.BACKUP_FILE_NAME)
             }.getOrElse {
-                "生成失败：${it.localizedMessage ?: "未知错误"}"
+                localizedString(R.string.settings_export_database_failure, it.localizedMessage ?: localizedString(R.string.common_unknown_error))
             }
             _uiState.update {
                 it.copy(
@@ -471,7 +474,7 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.update {
                 it.copy(
                     isBackupWorking = true,
-                    settingsMessage = "正在读取数据库数据...",
+                    settingsMessage = localizedString(R.string.settings_importing_database),
                 )
             }
             val message = runCatching {
@@ -479,13 +482,13 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
                 val result = repository.importRecords(records)
                 observeLedgerMonth()
                 observeStatisticsMonth()
-                "读取完成，导入 ${result.importedCount} 条，跳过重复 ${result.skippedDuplicateCount} 条\n当前页面已刷新，无需重启 App"
+                localizedString(R.string.settings_import_database_success, result.importedCount, result.skippedDuplicateCount)
             }.getOrElse {
                 val reason = when (it) {
-                    is BackupException -> it.message ?: "备份文件无效"
-                    else -> it.localizedMessage ?: "未知错误"
+                    is BackupException -> it.message ?: localizedString(R.string.backup_file_invalid)
+                    else -> it.localizedMessage ?: localizedString(R.string.common_unknown_error)
                 }
-                "读取失败：$reason"
+                localizedString(R.string.settings_import_database_failure, reason)
             }
             _uiState.update {
                 it.copy(
@@ -554,6 +557,9 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+
+    private fun localizedString(@StringRes resId: Int, vararg args: Any): String =
+        AppLocaleManager.wrap(getApplication<Application>()).getString(resId, *args)
     private fun parseAmountCents(input: String): Long {
         return runCatching {
             BigDecimal(input.ifBlank { "0" })
@@ -680,11 +686,6 @@ fun List<BillRecordEntity>.categorySummaries(type: BillType): List<CategorySumma
 
 fun BillRecordEntity.localDate(): LocalDate =
     Instant.ofEpochMilli(occurredAt).atZone(ZoneId.systemDefault()).toLocalDate()
-
-fun BillRecordEntity.dateTimeText(): String =
-    Instant.ofEpochMilli(occurredAt)
-        .atZone(ZoneId.systemDefault())
-        .format(DateTimeFormatter.ofPattern("M月d日 HH:mm"))
 
 fun centsText(cents: Long): String = "¥%.2f".format(cents / 100.0)
 

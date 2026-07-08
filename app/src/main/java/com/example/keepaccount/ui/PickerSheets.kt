@@ -41,14 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillCategory
 import com.example.keepaccount.data.BillRecordEntity
-import com.example.keepaccount.data.DefaultCategories
-import com.example.keepaccount.data.label
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.math.abs
@@ -67,7 +67,7 @@ internal fun DatePickerSheet(
         containerColor = Color.White,
     ) {
         Column(modifier = Modifier.padding(bottom = 28.dp)) {
-            SheetTitle("请选择时间", onDismiss)
+            SheetTitle(stringResource(R.string.select_time), onDismiss)
             CalendarGrid(
                 month = state.calendarMonth,
                 selectedDate = state.date,
@@ -107,7 +107,7 @@ internal fun NoteEditorSheet(
                     modifier = Modifier.clickable(onClick = onDismiss),
                 )
                 Text(
-                    text = "佬凤日记",
+                    text = stringResource(R.string.note_label),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     fontWeight = FontWeight.SemiBold,
@@ -118,7 +118,7 @@ internal fun NoteEditorSheet(
             OutlinedTextField(
                 value = note,
                 onValueChange = onValueChange,
-                placeholder = { Text("输入备注内容") },
+                placeholder = { Text(stringResource(R.string.note_placeholder)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(80.dp),
@@ -138,7 +138,7 @@ internal fun NoteEditorSheet(
                 enabled = note.length <= 30,
                 colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
             ) {
-                Text("确定")
+                Text(stringResource(R.string.common_confirm))
             }
         }
     }
@@ -164,12 +164,12 @@ internal fun RecordDetailSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 22.dp, vertical = 12.dp),
         ) {
-            SheetTitle("账单详情", onDismiss)
-            DetailLine(label = "类型", value = record.type.label())
-            DetailLine(label = "分类", value = DefaultCategories.nameOf(record.category))
-            DetailLine(label = "金额", value = signedCentsText(record))
-            DetailLine(label = "日期", value = record.dateTimeText())
-            DetailLine(label = "备注", value = record.note.ifBlank { "无" })
+            SheetTitle(stringResource(R.string.detail_title), onDismiss)
+            DetailLine(label = stringResource(R.string.detail_type), value = localizedBillTypeLabel(record.type))
+            DetailLine(label = stringResource(R.string.detail_category), value = localizedCategoryName(record.category))
+            DetailLine(label = stringResource(R.string.detail_amount), value = signedCentsText(record))
+            DetailLine(label = stringResource(R.string.detail_date), value = record.localizedDateTimeText())
+            DetailLine(label = stringResource(R.string.detail_note), value = record.note.ifBlank { stringResource(R.string.common_none) })
             Spacer(modifier = Modifier.height(18.dp))
             Button(
                 onClick = onEdit,
@@ -179,7 +179,7 @@ internal fun RecordDetailSheet(
                 colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
                 shape = RoundedCornerShape(8.dp),
             ) {
-                Text("编辑账单")
+                Text(stringResource(R.string.detail_edit_bill))
             }
             Spacer(modifier = Modifier.height(10.dp))
             Button(
@@ -190,7 +190,7 @@ internal fun RecordDetailSheet(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE95B5B)),
                 shape = RoundedCornerShape(8.dp),
             ) {
-                Text("删除账单")
+                Text(stringResource(R.string.detail_delete_bill))
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -199,7 +199,7 @@ internal fun RecordDetailSheet(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            text = { Text("确认删除账单？") },
+            text = { Text(stringResource(R.string.detail_delete_confirm)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -208,12 +208,12 @@ internal fun RecordDetailSheet(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE95B5B)),
                 ) {
-                    Text("确认")
+                    Text(stringResource(R.string.common_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("取消")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )
@@ -267,7 +267,7 @@ internal fun MonthPickerDialog(
                 .padding(horizontal = 18.dp),
         ) {
             Text(
-                text = "选择月份",
+                text = stringResource(R.string.select_month),
                 modifier = Modifier.padding(top = 16.dp, bottom = 14.dp),
                 fontWeight = FontWeight.SemiBold,
             )
@@ -297,7 +297,7 @@ internal fun MonthPickerDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     MonthWheelColumn(
-                        items = (1980..2150).map { "${it}年" },
+                        items = (1980..2150).map { stringResource(R.string.format_year_label, it) },
                         selectedIndex = (selectedMonth.year - 1980).coerceIn(0, 170),
                         onSelectedIndex = { index ->
                             val selectedYear = 1980 + index
@@ -306,7 +306,7 @@ internal fun MonthPickerDialog(
                         modifier = Modifier.weight(1f),
                     )
                     MonthWheelColumn(
-                        items = (1..12).map { "${it}月" },
+                        items = (1..12).map { stringResource(R.string.format_month_label, it) },
                         selectedIndex = selectedMonth.monthValue - 1,
                         onSelectedIndex = { index ->
                             val selectedMonthValue = index + 1
@@ -334,7 +334,7 @@ internal fun MonthPickerDialog(
                     ),
                     shape = RoundedCornerShape(8.dp),
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.common_cancel))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Button(
@@ -345,7 +345,7 @@ internal fun MonthPickerDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10C76F)),
                     shape = RoundedCornerShape(8.dp),
                 ) {
-                    Text("确定")
+                    Text(stringResource(R.string.common_confirm))
                 }
             }
         }
@@ -457,17 +457,17 @@ internal fun CalendarGrid(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { onChangeMonth(-1) }) { Text("上月") }
+            TextButton(onClick = { onChangeMonth(-1) }) { Text(stringResource(R.string.previous_month)) }
             Text(
-                text = "${month.year}年${month.monthValue}月",
+                text = stringResource(R.string.format_year_month, month.year, month.monthValue),
                 fontWeight = FontWeight.SemiBold,
             )
-            TextButton(onClick = { onChangeMonth(1) }) { Text("下月") }
+            TextButton(onClick = { onChangeMonth(1) }) { Text(stringResource(R.string.next_month)) }
         }
         Row(modifier = Modifier.fillMaxWidth()) {
-            listOf("日", "一", "二", "三", "四", "五", "六").forEach {
+            listOf(R.string.weekday_short_sunday, R.string.weekday_short_monday, R.string.weekday_short_tuesday, R.string.weekday_short_wednesday, R.string.weekday_short_thursday, R.string.weekday_short_friday, R.string.weekday_short_saturday).forEach {
                 Text(
-                    text = it,
+                    text = stringResource(it),
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center,
                     color = MutedText,
@@ -523,7 +523,7 @@ internal fun CategoryGrid(
                 rowItems.forEach { category ->
                     val isSelected = selected == category.id
                     Text(
-                        text = category.name,
+                        text = localizedCategoryName(category.id),
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp)

@@ -1,5 +1,6 @@
 package com.example.keepaccount.ui
 
+import android.content.Context
 import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -47,6 +48,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,14 +57,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
-import com.example.keepaccount.data.DefaultCategories
-import com.example.keepaccount.data.label
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
@@ -77,17 +77,19 @@ internal fun StatisticsPage(
     onOpenCategoryDetail: (Int) -> Unit,
     onOpenMonthlyRanking: (YearMonth) -> Unit,
 ) {
+    val context = LocalContext.current
     val records = state.statisticsRecords.filter { it.type == state.statisticsMode }
     val summaries = state.statisticsRecords.categorySummaries(state.statisticsMode)
     val total = records.sumOf { it.amountCents }
     val dailyItems = remember(records, state.statisticsMonth) {
         dailyPoints(records, state.statisticsMonth)
     }
-    val monthlyItems = remember(state.statisticsRangeRecords, state.statisticsMonth, state.statisticsMode) {
+    val monthlyItems = remember(state.statisticsRangeRecords, state.statisticsMonth, state.statisticsMode, context) {
         monthlyPoints(
             records = state.statisticsRangeRecords,
             month = state.statisticsMonth,
             mode = state.statisticsMode,
+            context = context,
         )
     }
     var rankingMonth by remember { mutableStateOf(state.statisticsMonth) }
@@ -135,8 +137,8 @@ internal fun StatisticsPage(
         if (records.isEmpty()) {
             item {
                 EmptyState(
-                    title = "暂无统计数据",
-                    subtitle = "添加账单后，这里会自动生成图表",
+                    title = stringResource(R.string.statistics_empty_title),
+                    subtitle = stringResource(R.string.statistics_empty_subtitle),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(360.dp),
@@ -144,7 +146,7 @@ internal fun StatisticsPage(
             }
         } else {
             item {
-                StatisticsSectionTitle("支出构成".takeIf { state.statisticsMode == BillType.EXPENSE } ?: "入账构成")
+                StatisticsSectionTitle(stringResource(if (state.statisticsMode == BillType.EXPENSE) R.string.statistics_expense_composition else R.string.statistics_income_composition))
                 DonutChart(
                     summaries = summaries,
                     modifier = Modifier
@@ -162,7 +164,7 @@ internal fun StatisticsPage(
             }
             item {
                 Spacer(modifier = Modifier.height(24.dp))
-                StatisticsSectionTitle("每日对比")
+                StatisticsSectionTitle(stringResource(R.string.statistics_daily_comparison))
                 DailyComparisonChart(
                     points = dailyItems,
                     mode = state.statisticsMode,
@@ -176,7 +178,7 @@ internal fun StatisticsPage(
                         .height(230.dp)
                         .padding(horizontal = 14.dp),
                 )
-                StatisticsSectionTitle("月度对比")
+                StatisticsSectionTitle(stringResource(R.string.statistics_monthly_comparison))
                 MonthlyComparisonChart(
                     points = monthlyItems,
                     selectedMonth = rankingMonth,
@@ -187,7 +189,7 @@ internal fun StatisticsPage(
                         .height(230.dp)
                         .padding(horizontal = 14.dp),
                 )
-                StatisticsSectionTitle("${rankingMonth.monthValue}月${state.statisticsMode.label()}排行")
+                StatisticsSectionTitle(stringResource(R.string.format_ranking_title, rankingMonth.monthValue, localizedBillTypeLabel(state.statisticsMode)))
             }
             itemsIndexed(previewRankingRecords) { index, record ->
                 RankingRecordRow(
@@ -222,7 +224,7 @@ private fun MonthlyRankingFooter(
 ) {
     if (!visible) return
     Text(
-        text = "全部排行 〉",
+        text = stringResource(R.string.statistics_all_ranking),
         color = MutedText,
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier
@@ -249,27 +251,27 @@ internal fun StatisticsHeader(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${month.year}年${month.monthValue}月",
+                text = stringResource(R.string.format_year_month, month.year, month.monthValue),
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.clickable(onClick = onShowMonthPicker),
             )
             Spacer(modifier = Modifier.weight(1f))
             ModeButton(
-                text = "支出",
+                text = stringResource(R.string.bill_type_expense),
                 selected = mode == BillType.EXPENSE,
                 onClick = { onSwitchMode(BillType.EXPENSE) },
             )
             Spacer(modifier = Modifier.width(8.dp))
             ModeButton(
-                text = "入账",
+                text = stringResource(R.string.bill_type_income),
                 selected = mode == BillType.INCOME,
                 onClick = { onSwitchMode(BillType.INCOME) },
             )
         }
         Spacer(modifier = Modifier.height(36.dp))
         Text(
-            text = "共${mode.label()}",
+            text = stringResource(R.string.format_total_type, localizedBillTypeLabel(mode)),
             color = Color.White.copy(alpha = 0.72f),
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -309,6 +311,7 @@ internal fun StatisticsSectionTitle(text: String) {
 @Composable
 internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = Modifier) {
     val colors = chartColors()
+    val context = LocalContext.current
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (summaries.isEmpty()) return@Canvas
@@ -341,7 +344,7 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
                 val midAngle = startAngle + sweep / 2f
                 val radians = midAngle.toRadians()
                 val side = if (cos(radians) >= 0f) DonutLabelSide.RIGHT else DonutLabelSide.LEFT
-                val labelText = "${DefaultCategories.nameOf(item.category)} ${"%.2f".format(item.percent * 100)}%"
+                val labelText = "${context.localizedCategoryName(item.category)} ${"%.2f".format(item.percent * 100)}%"
                 val labelWidth = textPaint.measureText(labelText)
                 labels += DonutLabel(
                     text = labelText,
@@ -399,7 +402,7 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
             }
         }
         if (summaries.isEmpty()) {
-            Text("暂无数据", color = MutedText)
+            Text(stringResource(R.string.statistics_no_data), color = MutedText)
         }
     }
 }
@@ -420,7 +423,7 @@ internal fun CategorySummaryRow(
         CategoryIcon(category = summary.category)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = DefaultCategories.nameOf(summary.category),
+            text = localizedCategoryName(summary.category),
             modifier = Modifier.width(70.dp),
             fontWeight = FontWeight.SemiBold,
         )
@@ -460,6 +463,7 @@ private fun DailyComparisonChart(
     onTooltipSelected: (DailyChartPoint) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     var selectedIndex by remember { mutableStateOf(points.defaultSelectedDailyIndex()) }
     LaunchedEffect(points) {
         selectedIndex = points.defaultSelectedDailyIndex()
@@ -476,7 +480,7 @@ private fun DailyComparisonChart(
         },
         mode = mode,
         modifier = modifier,
-        tooltipTitle = { point -> "${point.date.monthValue}月${point.date.dayOfMonth}日共${mode.label()}" },
+        tooltipTitle = { point -> context.getString(R.string.format_day_total_type, point.date.monthValue, point.date.dayOfMonth, context.localizedBillTypeLabel(mode)) },
         showTooltip = true,
         showValueLabels = false,
         xLabelStep = max(1, points.size / 6),
@@ -494,6 +498,7 @@ private fun MonthlyComparisonChart(
     onMonthSelected: (YearMonth) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     var selectedIndex by remember { mutableStateOf(points.indexOfMonth(selectedMonth)) }
     LaunchedEffect(points, selectedMonth, mode) {
         selectedIndex = points.indexOfMonth(selectedMonth)
@@ -508,7 +513,7 @@ private fun MonthlyComparisonChart(
         },
         mode = mode,
         modifier = modifier,
-        tooltipTitle = { point -> "${point.label}${mode.label()}" },
+        tooltipTitle = { point -> point.label + context.localizedBillTypeLabel(mode) },
         showTooltip = false,
         showValueLabels = true,
         xLabelStep = 1,
@@ -786,15 +791,15 @@ private fun DailyRecordDialog(
                     .navigationBarsPadding()
                     .padding(horizontal = 22.dp, vertical = 12.dp),
             ) {
-                SheetTitle("账单详情", onDismiss)
-                DetailLine(label = "日期", value = date.format(DateTimeFormatter.ofPattern("yyyy年M月d日", Locale.CHINA)))
-                DetailLine(label = "类型", value = mode.label())
-                DetailLine(label = "金额", value = centsText(total))
+                SheetTitle(stringResource(R.string.detail_title), onDismiss)
+                DetailLine(label = stringResource(R.string.detail_date), value = stringResource(R.string.format_full_date, date.year, date.monthValue, date.dayOfMonth))
+                DetailLine(label = stringResource(R.string.detail_type), value = localizedBillTypeLabel(mode))
+                DetailLine(label = stringResource(R.string.detail_amount), value = centsText(total))
                 Spacer(modifier = Modifier.height(18.dp))
                 if (records.isEmpty()) {
                     EmptyState(
-                        title = "暂无记录",
-                        subtitle = "当天没有${mode.label()}记录",
+                        title = stringResource(R.string.statistics_daily_empty_title),
+                        subtitle = stringResource(R.string.statistics_daily_empty_subtitle, localizedBillTypeLabel(mode)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(170.dp),
@@ -844,7 +849,7 @@ private fun DailyDialogRecordRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = DefaultCategories.nameOf(record.category),
+                text = localizedCategoryName(record.category),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -897,13 +902,13 @@ private fun RankingRecordRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = DefaultCategories.nameOf(record.category),
+                text = localizedCategoryName(record.category),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = record.note.ifBlank { record.dateTimeText() },
+                text = record.note.ifBlank { record.localizedDateTimeText() },
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1,
@@ -916,7 +921,7 @@ private fun RankingRecordRow(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = record.dateTimeText(),
+                text = record.localizedDateTimeText(),
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -1093,6 +1098,7 @@ internal fun monthlyPoints(
     records: List<BillRecordEntity>,
     month: YearMonth,
     mode: BillType,
+    context: Context,
 ): List<MonthlyChartPoint> {
     val byMonth = records
         .filter { it.type == mode }
@@ -1102,7 +1108,7 @@ internal fun monthlyPoints(
         val targetMonth = month.minusMonths(offset.toLong())
         MonthlyChartPoint(
             month = targetMonth,
-            label = "${targetMonth.monthValue}月",
+            label = context.getString(R.string.format_month_label, targetMonth.monthValue),
             value = byMonth[targetMonth] ?: 0L,
         )
     }

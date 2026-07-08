@@ -1,3 +1,160 @@
 <resources>
     <string name="app_name">记你佬味</string>
+    <string name="app_add_bill">记你佬味</string>
+    <string name="app_ledger_title">佬味账本</string>
+    <string name="tab_ledger">楞手佬味</string>
+    <string name="tab_statistics">佬味计数</string>
+    <string name="tab_settings">设你佬味</string>
+    <string name="note_label">佬凤日记</string>
+    <string name="beauty_title">佬凤爱美丽</string>
+    <string name="language_title">佬味口音</string>
+
+    <string name="bill_type_expense">支出</string>
+    <string name="bill_type_income">入账</string>
+    <string name="bill_type_excluded">不计入收支</string>
+    <string name="category_dining">餐饮</string>
+    <string name="category_traffic">交通</string>
+    <string name="category_shopping">购物</string>
+    <string name="category_utilities">生活缴费</string>
+    <string name="category_medical">医疗</string>
+    <string name="category_clothing">服饰</string>
+    <string name="category_entertainment">娱乐</string>
+    <string name="category_service">服务</string>
+    <string name="category_education">教育</string>
+    <string name="category_sports">运动</string>
+    <string name="category_travel">旅行</string>
+    <string name="category_pets">宠物</string>
+    <string name="category_insurance">保险</string>
+    <string name="category_charity">公益</string>
+    <string name="category_salary">工资</string>
+    <string name="category_bonus">奖金</string>
+    <string name="category_refund">退款</string>
+    <string name="category_investment">投资</string>
+    <string name="category_other">其他</string>
+    <string name="category_unknown">未知分类</string>
+
+    <string name="common_confirm">确定</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_save">保存</string>
+    <string name="common_selected">已选</string>
+    <string name="common_switch">切换</string>
+    <string name="common_none">无</string>
+    <string name="common_processing">处理中...</string>
+    <string name="common_unknown_error">未知错误</string>
+    <string name="sort_by_amount">按金额</string>
+    <string name="sort_by_time">按时间</string>
+
+    <string name="format_year_month">%1$d年%2$d月</string>
+    <string name="format_month_day">%1$d月%2$d日</string>
+    <string name="format_month_day_time">%1$d月%2$d日 %3$s</string>
+    <string name="format_full_date">%1$d年%2$d月%3$d日</string>
+    <string name="format_day_title">%1$d月%2$d日%3$s %4$s</string>
+    <string name="format_year_label">%1$d年</string>
+    <string name="format_total_type">共%1$s</string>
+    <string name="format_month_category_total_type">%1$d月%2$s共%3$s</string>
+    <string name="format_month_total_type">%1$d月共%2$s</string>
+    <string name="format_ranking_title">%1$d月%2$s排行</string>
+    <string name="format_day_total_type">%1$d月%2$d日共%3$s</string>
+    <string name="format_month_label">%1$d月</string>
+    <string name="format_note_with_value">佬凤日记：%1$s</string>
+    <string name="relative_today">今天</string>
+    <string name="relative_yesterday">昨天</string>
+    <string name="weekday_monday">星期一</string>
+    <string name="weekday_tuesday">星期二</string>
+    <string name="weekday_wednesday">星期三</string>
+    <string name="weekday_thursday">星期四</string>
+    <string name="weekday_friday">星期五</string>
+    <string name="weekday_saturday">星期六</string>
+    <string name="weekday_sunday">星期日</string>
+    <string name="weekday_short_sunday">日</string>
+    <string name="weekday_short_monday">一</string>
+    <string name="weekday_short_tuesday">二</string>
+    <string name="weekday_short_wednesday">三</string>
+    <string name="weekday_short_thursday">四</string>
+    <string name="weekday_short_friday">五</string>
+    <string name="weekday_short_saturday">六</string>
+
+    <string name="select_type">请选择类型</string>
+    <string name="all_types">全部类型</string>
+    <string name="select_time">请选择时间</string>
+    <string name="select_month">选择月份</string>
+    <string name="previous_month">上月</string>
+    <string name="next_month">下月</string>
+
+    <string name="ledger_no_bills_title">暂无账单</string>
+    <string name="ledger_no_bills_subtitle">点击底部记你佬味，开始记录今天的收支</string>
+    <string name="ledger_total_expense">总支出%1$s</string>
+    <string name="ledger_total_income">总入账%1$s</string>
+    <string name="ledger_day_expense">出 %1$s</string>
+    <string name="ledger_day_income">入 %1$s</string>
+
+    <string name="add_bill_edit_title">编辑账单</string>
+    <string name="add_bill_invalid_amount">请输入有效金额</string>
+    <string name="note_placeholder">输入备注内容</string>
+
+    <string name="detail_title">账单详情</string>
+    <string name="detail_type">类型</string>
+    <string name="detail_category">分类</string>
+    <string name="detail_amount">金额</string>
+    <string name="detail_date">日期</string>
+    <string name="detail_note">备注</string>
+    <string name="detail_edit_bill">编辑账单</string>
+    <string name="detail_delete_bill">删除账单</string>
+    <string name="detail_delete_confirm">确认删除账单？</string>
+
+    <string name="category_detail_empty_title">暂无明细</string>
+    <string name="category_detail_empty_subtitle">这个分类下还没有账单记录</string>
+
+    <string name="statistics_empty_title">暂无统计数据</string>
+    <string name="statistics_empty_subtitle">添加账单后，这里会自动生成图表</string>
+    <string name="statistics_expense_composition">支出构成</string>
+    <string name="statistics_income_composition">入账构成</string>
+    <string name="statistics_daily_comparison">每日对比</string>
+    <string name="statistics_monthly_comparison">月度对比</string>
+    <string name="statistics_all_ranking">全部排行 〉</string>
+    <string name="statistics_no_data">暂无数据</string>
+    <string name="statistics_daily_empty_title">暂无记录</string>
+    <string name="statistics_daily_empty_subtitle">当天没有%1$s记录</string>
+    <string name="ranking_empty_title">暂无排行</string>
+    <string name="ranking_empty_subtitle">这个月份还没有%1$s账单</string>
+
+    <string name="settings_backup_directory">备份目录</string>
+    <string name="settings_backup_file">备份文件：%1$s</string>
+    <string name="settings_backup_guide">操作指引：点击“生成数据库数据”会把备份文件保存到 Download/KeepAccount；换手机时把 keep_account_backup.json 放到新手机同一目录，再点击“读取数据库数据”导入。Android 10 及以上无需权限，Android 9 及以下会申请存储权限；导入完成后页面会自动刷新，无需重启 App。</string>
+    <string name="settings_export_database">生成数据库数据</string>
+    <string name="settings_import_database">读取数据库数据</string>
+    <string name="settings_generate_2026_title">生成2026年一到六月的数据？</string>
+    <string name="settings_generate_2026_message">此操作会先替换 2026 年 1 月到 6 月的数据，再写入图片整理出的账单。</string>
+    <string name="settings_category_theme_changed">分类图标已切换，无需重启 App</string>
+    <string name="settings_generated_2026_success">已生成 2026 年 1 月到 6 月数据，共 %1$d 条</string>
+    <string name="settings_exporting_database">正在生成数据库数据...</string>
+    <string name="settings_export_database_success">已生成数据库数据，共 %1$d 条\n目录：%2$s\n文件：%3$s</string>
+    <string name="settings_export_database_failure">生成失败：%1$s</string>
+    <string name="settings_importing_database">正在读取数据库数据...</string>
+    <string name="settings_import_database_success">读取完成，导入 %1$d 条，跳过重复 %2$d 条\n当前页面已刷新，无需重启 App</string>
+    <string name="settings_import_database_failure">读取失败：%1$s</string>
+
+    <string name="backup_file_invalid">备份文件无效</string>
+    <string name="backup_file_not_json">备份文件不是合法 JSON</string>
+    <string name="backup_file_create_failed">备份文件创建失败</string>
+    <string name="backup_file_open_failed">备份文件打开失败</string>
+    <string name="backup_file_write_failed">备份文件写入失败：%1$s</string>
+    <string name="backup_directory_create_failed">备份目录创建失败：%1$s</string>
+    <string name="backup_file_missing_download">没有找到备份文件，请先把 %1$s 放到 %2$s</string>
+    <string name="backup_file_read_failed">备份文件读取失败：%1$s</string>
+    <string name="backup_file_version_invalid">备份文件版本无效</string>
+    <string name="backup_file_version_too_high">备份文件版本过高，请升级 App 后再导入</string>
+    <string name="backup_record_format_invalid">第 %1$d 条账单格式错误</string>
+    <string name="backup_record_type_invalid">第 %1$d 条账单类型无效</string>
+    <string name="backup_file_missing_field">备份文件缺少字段：%1$s</string>
+    <string name="backup_file_field_invalid">备份文件字段无效：%1$s</string>
+
+    <string name="beauty_category_icons">分类图标</string>
+
+    <string name="language_simplified_chinese">简体中文</string>
+    <string name="language_traditional_chinese">繁体中文</string>
+    <string name="language_english">English</string>
+    <string name="language_japanese">日本語</string>
+    <string name="language_korean">한국어</string>
+    <string name="language_no_restart_needed">切换后会立即刷新，无需重启 App</string>
 </resources>

@@ -28,15 +28,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
-import com.example.keepaccount.data.DefaultCategories
-import com.example.keepaccount.data.label
 import java.time.YearMonth
 
 @Composable
@@ -110,7 +110,7 @@ internal fun MonthlyRankingPage(
         }
         Spacer(modifier = Modifier.height(36.dp))
         Text(
-            text = "${month.monthValue}月共${type.label()}",
+            text = stringResource(R.string.format_month_total_type, month.monthValue, localizedBillTypeLabel(type)),
             color = MutedText,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
@@ -133,8 +133,8 @@ internal fun MonthlyRankingPage(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SortChip("按金额", sort == DetailSort.AMOUNT) { sort = DetailSort.AMOUNT }
-            SortChip("按时间", sort == DetailSort.TIME) { sort = DetailSort.TIME }
+            SortChip(stringResource(R.string.sort_by_amount), sort == DetailSort.AMOUNT) { sort = DetailSort.AMOUNT }
+            SortChip(stringResource(R.string.sort_by_time), sort == DetailSort.TIME) { sort = DetailSort.TIME }
         }
         Box(
             modifier = Modifier
@@ -144,8 +144,8 @@ internal fun MonthlyRankingPage(
         )
         if (records.isEmpty()) {
             EmptyState(
-                title = "暂无排行",
-                subtitle = "这个月份还没有${type.label()}账单",
+                title = stringResource(R.string.ranking_empty_title),
+                subtitle = stringResource(R.string.ranking_empty_subtitle, localizedBillTypeLabel(type)),
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -182,7 +182,7 @@ private fun FullRankingRecordRow(record: BillRecordEntity) {
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = DefaultCategories.nameOf(record.category),
+                        text = localizedCategoryName(record.category),
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -204,7 +204,7 @@ private fun FullRankingRecordRow(record: BillRecordEntity) {
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = record.dateTimeText(),
+                        text = record.localizedDateTimeText(),
                         color = MutedText,
                         style = MaterialTheme.typography.bodySmall,
                     )

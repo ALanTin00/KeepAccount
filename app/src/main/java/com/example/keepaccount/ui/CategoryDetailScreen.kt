@@ -21,12 +21,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillRecordEntity
-import com.example.keepaccount.data.DefaultCategories
-import com.example.keepaccount.data.label
 
 @Composable
 internal fun CategoryDetailPage(
@@ -66,7 +66,7 @@ internal fun CategoryDetailPage(
         }
         Spacer(modifier = Modifier.height(48.dp))
         Text(
-            text = "${state.statisticsMonth.monthValue}月${DefaultCategories.nameOf(detail.category)}共${state.statisticsMode.label()}",
+            text = stringResource(R.string.format_month_category_total_type, state.statisticsMonth.monthValue, localizedCategoryName(detail.category), localizedBillTypeLabel(state.statisticsMode)),
             color = MutedText,
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
@@ -83,14 +83,14 @@ internal fun CategoryDetailPage(
             modifier = Modifier.padding(horizontal = 26.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SortChip("按金额", detail.sort == DetailSort.AMOUNT) { onSortSelected(DetailSort.AMOUNT) }
-            SortChip("按时间", detail.sort == DetailSort.TIME) { onSortSelected(DetailSort.TIME) }
+            SortChip(stringResource(R.string.sort_by_amount), detail.sort == DetailSort.AMOUNT) { onSortSelected(DetailSort.AMOUNT) }
+            SortChip(stringResource(R.string.sort_by_time), detail.sort == DetailSort.TIME) { onSortSelected(DetailSort.TIME) }
         }
         Spacer(modifier = Modifier.height(16.dp))
         if (records.isEmpty()) {
             EmptyState(
-                title = "暂无明细",
-                subtitle = "这个分类下还没有账单记录",
+                title = stringResource(R.string.category_detail_empty_title),
+                subtitle = stringResource(R.string.category_detail_empty_subtitle),
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -128,7 +128,7 @@ internal fun DetailRecordRow(record: BillRecordEntity) {
         CategoryIcon(category = record.category)
         Spacer(modifier = Modifier.width(14.dp))
         Text(
-            text = DefaultCategories.nameOf(record.category),
+            text = localizedCategoryName(record.category),
             modifier = Modifier.weight(1f),
             fontWeight = FontWeight.SemiBold,
         )
@@ -138,7 +138,7 @@ internal fun DetailRecordRow(record: BillRecordEntity) {
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = record.dateTimeText(),
+                text = record.localizedDateTimeText(),
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
             )

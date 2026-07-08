@@ -16,12 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,17 +33,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import com.example.keepaccount.R
 
 @Composable
 internal fun SettingsPage(
     state: LedgerUiState,
     onExportDatabaseData: () -> Unit,
     onImportDatabaseData: () -> Unit,
-    onGenerate2026FirstHalfData: () -> Unit,
     onOpenBeautyPage: () -> Unit,
+    onOpenLanguagePage: () -> Unit,
 ) {
     val context = LocalContext.current
-    var pendingAction by remember { mutableStateOf<SettingsDangerAction?>(null) }
     var pendingStorageAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     val storagePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -75,21 +74,21 @@ internal fun SettingsPage(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(10.dp))
-        Text("\u8bbe\u7f6e", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.tab_settings), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(24.dp))
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("备份目录", fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.settings_backup_directory), fontWeight = FontWeight.SemiBold)
             Text(
                 text = state.backupDirectoryPath,
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
             )
-            Text("备份文件：${state.backupFileName}", color = MutedText, style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.settings_backup_file, state.backupFileName), color = MutedText, style = MaterialTheme.typography.bodySmall)
             Text(
-                text = "操作指引：点击“生成数据库数据”会把备份文件保存到 Download/KeepAccount；换手机时把 keep_account_backup.json 放到新手机同一目录，再点击“读取数据库数据”导入。Android 10 及以上无需权限，Android 9 及以下会申请存储权限；导入完成后页面会自动刷新，无需重启 App。",
+                text = stringResource(R.string.settings_backup_guide),
                 color = MutedText,
                 style = MaterialTheme.typography.bodySmall,
             )
@@ -103,7 +102,18 @@ internal fun SettingsPage(
             colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
             shape = RoundedCornerShape(8.dp),
         ) {
-            Text("佬凤爱美丽")
+            Text(stringResource(R.string.beauty_title))
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onOpenLanguagePage,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
+            shape = RoundedCornerShape(8.dp),
+        ) {
+            Text(stringResource(R.string.language_title))
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
@@ -115,7 +125,7 @@ internal fun SettingsPage(
             colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
             shape = RoundedCornerShape(8.dp),
         ) {
-            Text(if (state.isBackupWorking) "处理中..." else "生成数据库数据")
+            Text(if (state.isBackupWorking) stringResource(R.string.common_processing) else stringResource(R.string.settings_export_database))
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
@@ -127,19 +137,7 @@ internal fun SettingsPage(
             colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
             shape = RoundedCornerShape(8.dp),
         ) {
-            Text("读取数据库数据")
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(
-            onClick = { pendingAction = SettingsDangerAction.GENERATE_2026_FIRST_HALF },
-            enabled = !state.isBackupWorking,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
-            shape = RoundedCornerShape(8.dp),
-        ) {
-            Text("生成2026年一到六月的数据")
+            Text(stringResource(R.string.settings_import_database))
         }
         state.settingsMessage?.let { message ->
             Spacer(modifier = Modifier.height(20.dp))
@@ -150,41 +148,4 @@ internal fun SettingsPage(
             )
         }
     }
-
-    pendingAction?.let { action ->
-        AlertDialog(
-            onDismissRequest = { pendingAction = null },
-            title = { Text(action.title) },
-            text = { Text(action.message) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        pendingAction = null
-                        when (action) {
-                            SettingsDangerAction.GENERATE_2026_FIRST_HALF -> onGenerate2026FirstHalfData()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreen),
-                ) {
-                    Text("确认")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingAction = null }) {
-                    Text("取消")
-                }
-            },
-        )
-    }
-}
-
-
-internal enum class SettingsDangerAction(
-    val title: String,
-    val message: String,
-) {
-    GENERATE_2026_FIRST_HALF(
-        title = "生成2026年一到六月的数据？",
-        message = "此操作会先替换 2026 年 1 月到 6 月的数据，再写入图片整理出的账单。",
-    ),
 }

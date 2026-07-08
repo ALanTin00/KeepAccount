@@ -29,10 +29,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.keepaccount.R
 
 @Composable
 fun BeautyActivityContent(
@@ -79,7 +81,7 @@ internal fun BeautyPage(
                     .padding(end = 16.dp, top = 8.dp, bottom = 8.dp),
             )
             Text(
-                text = "佬凤爱美丽",
+                text = stringResource(R.string.beauty_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -113,7 +115,7 @@ private fun CategoryIconThemeSwitcher(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("分类图标", fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.beauty_category_icons), fontWeight = FontWeight.SemiBold)
         CategoryIconTheme.values().forEach { theme ->
             CategoryIconThemeButton(
                 theme = theme,
@@ -152,13 +154,13 @@ private fun CategoryIconThemeButton(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "切换",
+                text = stringResource(R.string.common_switch),
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Start,
             )
             if (selected) {
-                Text("已选", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.common_selected), fontWeight = FontWeight.SemiBold)
             }
         }
     }

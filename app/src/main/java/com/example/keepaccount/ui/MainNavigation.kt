@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,7 +59,7 @@ internal fun BottomNavigation(
                 unselectedColor = unselectedColor,
                 selectedIcon = R.drawable.nav_ledger_selected,
                 unselectedIcon = R.drawable.nav_ledger_unselected,
-                label = "楞手佬味",
+                label = stringResource(R.string.tab_ledger),
                 modifier = Modifier.weight(1f),
                 onClick = { onTabSelected(AppTab.LEDGER) },
             )
@@ -68,7 +69,7 @@ internal fun BottomNavigation(
                 unselectedColor = unselectedColor,
                 selectedIcon = R.drawable.nav_statistics_selected,
                 unselectedIcon = R.drawable.nav_statistics_unselected,
-                label = "佬味计数",
+                label = stringResource(R.string.tab_statistics),
                 modifier = Modifier.weight(1f),
                 onClick = { onTabSelected(AppTab.STATISTICS) },
             )
@@ -78,7 +79,7 @@ internal fun BottomNavigation(
                 unselectedColor = unselectedColor,
                 selectedIcon = R.drawable.nav_settings_selected,
                 unselectedIcon = R.drawable.nav_settings_unselected,
-                label = "设你佬味",
+                label = stringResource(R.string.tab_settings),
                 modifier = Modifier.weight(1f),
                 onClick = { onTabSelected(AppTab.SETTINGS) },
             )

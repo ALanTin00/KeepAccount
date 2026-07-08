@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,7 +49,7 @@ internal fun LedgerPage(
 ) {
     val allRecords = state.ledgerAllRecords
     val groups = allRecords.groupsByDay()
-    val categoryLabel = state.selectedCategory?.let(DefaultCategories::nameOf) ?: "全部类型"
+    val categoryLabel = state.selectedCategory?.let { localizedCategoryName(it) } ?: stringResource(R.string.all_types)
     val listState = rememberLazyListState()
 
     LaunchedEffect(state.selectedMonth) {
@@ -71,8 +72,8 @@ internal fun LedgerPage(
 
         if (groups.isEmpty()) {
             EmptyState(
-                title = "暂无账单",
-                subtitle = "点击底部记你佬味，开始记录今天的收支",
+                title = stringResource(R.string.ledger_no_bills_title),
+                subtitle = stringResource(R.string.ledger_no_bills_subtitle),
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -83,7 +84,7 @@ internal fun LedgerPage(
                     start = 8.dp,
                     end = 8.dp,
                     top = 8.dp,
-                    bottom = 104.dp,
+                    bottom = 10.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
@@ -119,7 +120,7 @@ internal fun LedgerHeader(
                 .height(44.dp),
         ) {
             Text(
-                text = "佬味账本",
+                text = stringResource(R.string.app_ledger_title),
                 color = Color.White,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -152,7 +153,7 @@ internal fun LedgerHeader(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "${month.year}年${month.monthValue}月",
+                    text = stringResource(R.string.format_year_month, month.year, month.monthValue),
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -163,13 +164,13 @@ internal fun LedgerHeader(
             }
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "总支出${centsText(totalExpense)}",
+                text = stringResource(R.string.ledger_total_expense, centsText(totalExpense)),
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "总入账${centsText(totalIncome)}",
+                text = stringResource(R.string.ledger_total_income, centsText(totalIncome)),
                 color = Color.White,
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -237,18 +238,18 @@ internal fun DayGroupCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = group.date.dayTitle(),
+                    text = group.date.localizedDayTitle(),
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = "出 ${"%.2f".format(group.expenseCents / 100.0)}",
+                    text = stringResource(R.string.ledger_day_expense, "%.2f".format(group.expenseCents / 100.0)),
                     color = Color(0xFF8D5A2B),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
-                    text = "入 ${"%.2f".format(group.incomeCents / 100.0)}",
+                    text = stringResource(R.string.ledger_day_income, "%.2f".format(group.incomeCents / 100.0)),
                     color = Color(0xFF1E6C9C),
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -281,7 +282,7 @@ internal fun BillRecordRow(
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = DefaultCategories.nameOf(record.category),
+                text = localizedCategoryName(record.category),
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

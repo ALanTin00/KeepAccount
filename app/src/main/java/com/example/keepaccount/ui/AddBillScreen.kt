@@ -28,15 +28,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.keepaccount.R
 import com.example.keepaccount.data.BillCategory
 import com.example.keepaccount.data.BillType
 import com.example.keepaccount.data.DefaultCategories
-import com.example.keepaccount.data.label
-import java.time.format.DateTimeFormatter
 
 @Composable
 internal fun AddBillPage(
@@ -124,7 +124,7 @@ internal fun AddBillFormContent(
 ) {
     SheetCloseOnly(onDismiss)
     Text(
-        text = if (state.editingRecordId == null) "记你佬味" else "编辑账单",
+        text = if (state.editingRecordId == null) stringResource(R.string.app_add_bill) else stringResource(R.string.add_bill_edit_title),
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 4.dp),
@@ -137,7 +137,7 @@ internal fun AddBillFormContent(
     ) {
         listOf(BillType.EXPENSE, BillType.INCOME, BillType.EXCLUDED).forEach { type ->
             ModeSegment(
-                text = type.label(),
+                text = localizedBillTypeLabel(type),
                 selected = state.type == type,
                 onClick = { onTypeSelected(type) },
             )
@@ -145,7 +145,7 @@ internal fun AddBillFormContent(
         }
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            text = state.date.format(DateTimeFormatter.ofPattern("M月d日")) + " ▾",
+            text = stringResource(R.string.format_month_day, state.date.monthValue, state.date.dayOfMonth) + " ▾",
             modifier = Modifier
                 .clip(RoundedCornerShape(4.dp))
                 .background(Color(0xFFF5F5F5))
@@ -173,7 +173,7 @@ internal fun AddBillFormContent(
         onSelected = onCategorySelected,
     )
     Text(
-        text = if (state.note.isBlank()) "佬凤日记" else "佬凤日记：${state.note}",
+        text = if (state.note.isBlank()) stringResource(R.string.note_label) else stringResource(R.string.format_note_with_value, state.note),
         color = BrandGreen,
         modifier = Modifier
             .padding(horizontal = 18.dp, vertical = 8.dp)
@@ -192,7 +192,7 @@ internal fun AddBillFormContent(
         onDelete = onDeleteAmount,
         onConfirm = onSave,
         confirmEnabled = isAmountValid,
-        confirmText = if (state.editingRecordId == null) "确定" else "保存",
+        confirmText = if (state.editingRecordId == null) stringResource(R.string.common_confirm) else stringResource(R.string.common_save),
     )
 }
 @Composable
@@ -240,7 +240,7 @@ internal fun IconCategoryGrid(
                                 .size(34.dp),
                         )
                         Text(
-                            text = category.name,
+                            text = localizedCategoryName(category.id),
                             color = if (isSelected) BrandGreen else MutedText,
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
@@ -263,7 +263,7 @@ internal fun NumberPad(
     onDelete: () -> Unit,
     onConfirm: () -> Unit,
     confirmEnabled: Boolean = true,
-    confirmText: String = "确定",
+    confirmText: String,
 ) {
     val rows = listOf(
         listOf("1", "2", "3"),
