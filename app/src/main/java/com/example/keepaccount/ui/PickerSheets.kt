@@ -1,13 +1,12 @@
 package com.example.keepaccount.ui
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,6 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -28,6 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,16 +41,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.keepaccount.data.BillCategory
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.DefaultCategories
 import com.example.keepaccount.data.label
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -276,14 +281,15 @@ internal fun MonthPickerDialog(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
+                    .height(190.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .height(44.dp)
+                        .padding(horizontal = 28.dp)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFF7F7F7)),
                 )
                 Row(
@@ -291,19 +297,21 @@ internal fun MonthPickerDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     MonthWheelColumn(
-                        previousText = "${selectedMonth.minusYears(1).year}年",
-                        selectedText = "${selectedMonth.year}年",
-                        nextText = "${selectedMonth.plusYears(1).year}年",
-                        onPrevious = { onChangeMonth(-12) },
-                        onNext = { onChangeMonth(12) },
+                        items = (1980..2150).map { "${it}年" },
+                        selectedIndex = (selectedMonth.year - 1980).coerceIn(0, 170),
+                        onSelectedIndex = { index ->
+                            val selectedYear = 1980 + index
+                            onChangeMonth((selectedYear - selectedMonth.year) * 12L)
+                        },
                         modifier = Modifier.weight(1f),
                     )
                     MonthWheelColumn(
-                        previousText = "${selectedMonth.minusMonths(1).monthValue}月",
-                        selectedText = "${selectedMonth.monthValue}月",
-                        nextText = "${selectedMonth.plusMonths(1).monthValue}月",
-                        onPrevious = { onChangeMonth(-1) },
-                        onNext = { onChangeMonth(1) },
+                        items = (1..12).map { "${it}月" },
+                        selectedIndex = selectedMonth.monthValue - 1,
+                        onSelectedIndex = { index ->
+                            val selectedMonthValue = index + 1
+                            onChangeMonth((selectedMonthValue - selectedMonth.monthValue).toLong())
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -346,100 +354,92 @@ internal fun MonthPickerDialog(
 
 @Composable
 internal fun MonthWheelColumn(
-    previousText: String,
-    selectedText: String,
-    nextText: String,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
+    items: List<String>,
+    selectedIndex: Int,
+    onSelectedIndex: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dragStepPx = 36f
-    var dragOffset by remember { mutableStateOf(0f) }
+    val itemHeight = 38.dp
+    val wheelHeight = itemHeight * 5
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceIn(items.indices))
+    val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
 
-    Column(
-        modifier = modifier
-            .height(150.dp)
-            .pointerInput(onPrevious, onNext) {
-                detectVerticalDragGestures(
-                    onDragCancel = { dragOffset = 0f },
-                    onDragEnd = { dragOffset = 0f },
-                    onVerticalDrag = { change, dragAmount ->
-                        change.consume()
-                        dragOffset += dragAmount
-                        when {
-                            dragOffset >= dragStepPx -> {
-                                onPrevious()
-                                dragOffset = 0f
-                            }
-
-                            dragOffset <= -dragStepPx -> {
-                                onNext()
-                                dragOffset = 0f
-                            }
-                        }
-                    },
-                )
-            },
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        MonthWheelItem(
-            text = previousText,
-            selected = false,
-            onClick = onPrevious,
-        )
-        MonthWheelItem(
-            text = selectedText,
-            selected = true,
-            fontWeight = FontWeight.SemiBold,
-        )
-        MonthWheelItem(
-            text = nextText,
-            selected = false,
-            onClick = onNext,
-        )
+    LaunchedEffect(selectedIndex, items.size) {
+        val target = selectedIndex.coerceIn(items.indices)
+        if (!listState.isScrollInProgress && centeredWheelIndex(listState) != target) {
+            listState.scrollToItem(target)
+        }
     }
+
+    LaunchedEffect(listState, items.size) {
+        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
+            if (!scrolling) {
+                val centeredIndex = centeredWheelIndex(listState).coerceIn(items.indices)
+                if (centeredIndex != selectedIndex) {
+                    onSelectedIndex(centeredIndex)
+                }
+            }
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        flingBehavior = flingBehavior,
+        modifier = modifier.height(wheelHeight),
+        contentPadding = PaddingValues(vertical = itemHeight * 2),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        items(items.size) { index ->
+            val distance = abs(index - centeredWheelIndex(listState)).coerceAtMost(2)
+            MonthWheelItem(
+                text = items[index],
+                alpha = when (distance) {
+                    0 -> 1f
+                    1 -> 0.42f
+                    else -> 0.18f
+                },
+                scale = when (distance) {
+                    0 -> 1.08f
+                    1 -> 0.88f
+                    else -> 0.78f
+                },
+                fontWeight = if (distance == 0) FontWeight.SemiBold else FontWeight.Normal,
+            )
+        }
+    }
+}
+
+private fun centeredWheelIndex(state: LazyListState): Int {
+    val layoutInfo = state.layoutInfo
+    val visibleItems = layoutInfo.visibleItemsInfo
+    if (visibleItems.isEmpty()) return state.firstVisibleItemIndex
+    val viewportCenter = (layoutInfo.viewportStartOffset + layoutInfo.viewportEndOffset) / 2
+    return visibleItems.minByOrNull { item ->
+        abs((item.offset + item.size / 2) - viewportCenter)
+    }?.index ?: state.firstVisibleItemIndex
 }
 
 @Composable
 internal fun MonthWheelItem(
     text: String,
-    selected: Boolean,
+    alpha: Float,
+    scale: Float,
     fontWeight: FontWeight = FontWeight.Normal,
-    onClick: (() -> Unit)? = null,
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.18f else 0.88f,
-        animationSpec = tween(durationMillis = 180),
-        label = "monthWheelItemScale",
-    )
-    val alpha by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.35f,
-        animationSpec = tween(durationMillis = 180),
-        label = "monthWheelItemAlpha",
-    )
-
     Text(
         text = text,
         modifier = Modifier
-            .height(46.dp)
+            .height(38.dp)
             .fillMaxWidth()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
                 this.alpha = alpha
             }
-            .then(
-                if (onClick == null) {
-                    Modifier
-                } else {
-                    Modifier.clickable(onClick = onClick)
-                },
-            )
             .wrapContentHeight(Alignment.CenterVertically),
-        color = if (selected) Color.Black else MutedText,
+        color = Color(0xFF5F6368),
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 17.sp),
         fontWeight = fontWeight,
     )
 }

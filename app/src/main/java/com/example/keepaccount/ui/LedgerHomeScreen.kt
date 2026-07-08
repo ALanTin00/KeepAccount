@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +49,11 @@ internal fun LedgerPage(
     val allRecords = state.ledgerAllRecords
     val groups = allRecords.groupsByDay()
     val categoryLabel = state.selectedCategory?.let(DefaultCategories::nameOf) ?: "全部类型"
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(state.selectedMonth) {
+        listState.scrollToItem(0)
+    }
 
     Column(
         modifier = Modifier
@@ -70,6 +77,7 @@ internal fun LedgerPage(
             )
         } else {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 8.dp,

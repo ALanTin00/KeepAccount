@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val appVersionCode = 2
+val appVersionName = "1.0.1"
+
 android {
     namespace = "com.example.keepaccount"
     compileSdk {
@@ -15,8 +18,8 @@ android {
         applicationId = "com.example.keepaccount"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
