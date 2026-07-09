@@ -10,6 +10,11 @@
     <string name="language_title">佬味口音</string>
 
     <string name="change_phone_title">佬凤爱换机</string>
+    <string name="settings_section_personalize">个性化</string>
+    <string name="settings_section_transfer">数据迁移</string>
+    <string name="settings_beauty_subtitle">切换账本图标风格</string>
+    <string name="settings_language_subtitle">切换显示语言</string>
+    <string name="settings_change_phone_subtitle">备份和读取账本数据</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">入账</string>
     <string name="bill_type_excluded">不计入收支</string>

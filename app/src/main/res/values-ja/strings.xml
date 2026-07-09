@@ -9,6 +9,11 @@
     <string name="beauty_title">テーマ変更</string>
     <string name="language_title">言語切替</string>
     <string name="change_phone_title">機種変更</string>
+    <string name="settings_section_personalize">カスタマイズ</string>
+    <string name="settings_section_transfer">データ移行</string>
+    <string name="settings_beauty_subtitle">帳簿アイコンのスタイルを切り替えます</string>
+    <string name="settings_language_subtitle">表示言語を切り替えます</string>
+    <string name="settings_change_phone_subtitle">帳簿データをバックアップして読み取ります</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">収入</string>
     <string name="bill_type_excluded">収支に含めない</string>

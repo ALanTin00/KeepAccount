@@ -6,7 +6,7 @@ plugins {
 }
 
 val appVersionCode = 2
-val appVersionName = "1.0.1"
+val appVersionName = "8.8.8"
 
 android {
     namespace = "com.example.keepaccount"

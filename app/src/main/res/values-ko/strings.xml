@@ -9,6 +9,11 @@
     <string name="beauty_title">테마 변경</string>
     <string name="language_title">언어 전환</string>
     <string name="change_phone_title">휴대폰 변경</string>
+    <string name="settings_section_personalize">개인화</string>
+    <string name="settings_section_transfer">데이터 이전</string>
+    <string name="settings_beauty_subtitle">장부 아이콘 스타일을 전환합니다</string>
+    <string name="settings_language_subtitle">표시 언어를 변경합니다</string>
+    <string name="settings_change_phone_subtitle">장부 데이터를 백업하고 읽어옵니다</string>
     <string name="bill_type_expense">지출</string>
     <string name="bill_type_income">수입</string>
     <string name="bill_type_excluded">수입/지출 제외</string>

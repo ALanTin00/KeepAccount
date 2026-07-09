@@ -231,7 +231,7 @@ private fun KeepAccountScreen(
     val detail = state.categoryDetail
     val statusBarColor = when {
         detail != null -> Color.White
-        state.selectedTab == AppTab.SETTINGS -> Color.White
+        state.selectedTab == AppTab.SETTINGS -> PageBg
         else -> BrandGreen
     }
     SetStatusBarColor(statusBarColor)

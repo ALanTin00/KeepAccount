@@ -9,6 +9,11 @@
     <string name="beauty_title">Theme</string>
     <string name="language_title">Switch Language</string>
     <string name="change_phone_title">Change Phone</string>
+    <string name="settings_section_personalize">Personalization</string>
+    <string name="settings_section_transfer">Data Transfer</string>
+    <string name="settings_beauty_subtitle">Switch the ledger icon style</string>
+    <string name="settings_language_subtitle">Change the display language</string>
+    <string name="settings_change_phone_subtitle">Back up and import ledger data</string>
     <string name="bill_type_expense">Expense</string>
     <string name="bill_type_income">Income</string>
     <string name="bill_type_excluded">Excluded</string>
