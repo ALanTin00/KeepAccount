@@ -8,6 +8,7 @@
     <string name="note_label">메모</string>
     <string name="beauty_title">테마 변경</string>
     <string name="language_title">언어 전환</string>
+    <string name="change_phone_title">휴대폰 변경</string>
     <string name="bill_type_expense">지출</string>
     <string name="bill_type_income">수입</string>
     <string name="bill_type_excluded">수입/지출 제외</string>
@@ -110,7 +111,7 @@
     <string name="ranking_empty_subtitle">이번 달에는 %1$s 기록이 없습니다</string>
     <string name="settings_backup_directory">앱 전용 백업 폴더</string>
     <string name="settings_backup_file">백업 파일: %1$s</string>
-    <string name="settings_backup_guide">안내: “데이터베이스 데이터 생성”을 누르면 백업 파일이 휴대폰 저장소의 Android/data/com.example.keepaccount/files/backup/keep_account_backup.json에 저장됩니다. 휴대폰을 컴퓨터에 연결하면 이 폴더에서 찾을 수 있습니다. 다시 생성하면 기존 파일을 덮어쓰며 (1), (2) 사본을 만들지 않습니다. “데이터베이스 데이터 읽기”를 누르면 이 백업 파일에서 가져옵니다. 앱을 삭제하면 이 폴더의 백업 파일도 앱 데이터와 함께 삭제됩니다.</string>
+    <string name="settings_backup_guide">1. 이전 휴대폰에서 설정 &gt; 휴대폰 변경을 열고 “데이터베이스 데이터 생성”을 눌러 keep_account_backup.json을 만듭니다.\n2. 이전 휴대폰을 컴퓨터에 연결해 Android/data/com.example.keepaccount/files/backup에서 keep_account_backup.json을 찾아 컴퓨터로 복사할 수 있습니다. 휴대폰 파일 관리자 앱으로 같은 경로를 열어 파일을 찾아도 됩니다.\n3. 새 휴대폰에 앱을 설치하고 한 번 열어 같은 backup 폴더가 자동으로 만들어지게 합니다.\n4. keep_account_backup.json을 새 휴대폰의 Android/data/com.example.keepaccount/files/backup 폴더에 넣습니다. 컴퓨터로 복사해도 되고, 휴대폰 파일 관리자 앱으로 이동하거나 복사해도 됩니다.\n5. 새 휴대폰의 휴대폰 변경 화면으로 돌아가 “데이터베이스 데이터 읽기”를 눌러 가져옵니다. 중복 기록은 자동으로 건너뜁니다.\n</string>
     <string name="settings_export_database">데이터베이스 데이터 생성</string>
     <string name="settings_import_database">데이터베이스 데이터 읽기</string>
     <string name="settings_generate_2026_title">2026년 1월부터 6월까지의 데이터를 생성할까요?</string>

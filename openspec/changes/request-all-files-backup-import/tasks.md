@@ -22,3 +22,10 @@
 - [x] 4.2 Test on a real Android device that generate database data writes one app-specific external backup file and overwrites it on repeated taps.
 - [x] 4.3 Test on a real Android device that read database data imports from the app-specific external backup file without storage permission.
 - [x] 4.4 Test on a real Android device that missing app-specific external backup file shows a clear failure message and does not modify the database.
+## 5. Change Phone Page
+
+- [x] 5.1 Add a settings entry button labeled `佬凤爱换机` and center the remaining settings buttons.
+- [x] 5.2 Add a dedicated change-phone activity and route the new settings entry to it.
+- [x] 5.3 Move backup directory, operation guidance, generate, and read UI from settings into the change-phone activity.
+- [x] 5.4 Update the five-language title and five-step change-phone guidance strings.
+- [x] 5.5 Build the debug app successfully.

@@ -8,6 +8,7 @@
     <string name="note_label">メモ</string>
     <string name="beauty_title">テーマ変更</string>
     <string name="language_title">言語切替</string>
+    <string name="change_phone_title">機種変更</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">収入</string>
     <string name="bill_type_excluded">収支に含めない</string>
@@ -110,7 +111,7 @@
     <string name="ranking_empty_subtitle">この月には%1$sの記録がありません</string>
     <string name="settings_backup_directory">アプリ専用バックアップフォルダ</string>
     <string name="settings_backup_file">バックアップファイル：%1$s</string>
-    <string name="settings_backup_guide">手順：「データベースデータを生成」をタップすると、バックアップファイルを端末ストレージの Android/data/com.example.keepaccount/files/backup/keep_account_backup.json に保存します。端末をパソコンに接続すると、このフォルダで見つけられます。もう一度生成すると古いファイルを上書きし、(1) や (2) のコピーは作成しません。「データベースデータを読み取る」をタップすると、このバックアップファイルからインポートします。アプリをアンインストールすると、このフォルダ内のバックアップファイルもアプリデータと一緒に削除されます。</string>
+    <string name="settings_backup_guide">1. 古い端末で「設定」&gt;「機種変更」を開き、「データベースデータを生成」をタップして keep_account_backup.json を作成します。\n2. 古い端末をパソコンに接続し、Android/data/com.example.keepaccount/files/backup にある keep_account_backup.json を見つけてパソコンへコピーできます。スマホのファイル管理アプリで同じ場所を開いて見つけることもできます。\n3. 新しい端末にアプリをインストールして一度開き、同じ backup フォルダを自動作成します。\n4. keep_account_backup.json を新しい端末の Android/data/com.example.keepaccount/files/backup に入れます。パソコンからコピーしても、スマホのファイル管理アプリで移動またはコピーしてもかまいません。\n5. 新しい端末の「機種変更」に戻り、「データベースデータを読み取る」をタップしてインポートします。重複した記録は自動でスキップされます。\n</string>
     <string name="settings_export_database">データベースデータを生成</string>
     <string name="settings_import_database">データベースデータを読み取る</string>
     <string name="settings_generate_2026_title">2026年1月から6月のデータを生成しますか？</string>

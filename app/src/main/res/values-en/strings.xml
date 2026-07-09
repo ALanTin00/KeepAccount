@@ -8,6 +8,7 @@
     <string name="note_label">Note</string>
     <string name="beauty_title">Theme</string>
     <string name="language_title">Switch Language</string>
+    <string name="change_phone_title">Change Phone</string>
     <string name="bill_type_expense">Expense</string>
     <string name="bill_type_income">Income</string>
     <string name="bill_type_excluded">Excluded</string>
@@ -110,7 +111,7 @@
     <string name="ranking_empty_subtitle">No %1$s bills this month</string>
     <string name="settings_backup_directory">App-specific backup folder</string>
     <string name="settings_backup_file">Backup file: %1$s</string>
-    <string name="settings_backup_guide">Guide: Tap “Export database data” to save the backup file to phone storage at Android/data/com.example.keepaccount/files/backup/keep_account_backup.json. After connecting the phone to a computer, you can find it in that folder. Generating again overwrites the old file and will not create (1) or (2) copies. Tap “Import database data” to import from this backup file. The backup file in this folder is deleted with app data when the app is uninstalled.</string>
+    <string name="settings_backup_guide">1. On the old phone, open Settings &gt; Change Phone, then tap “Export database data” to create keep_account_backup.json.\n2. You can connect the old phone to a computer, find keep_account_backup.json in Android/data/com.example.keepaccount/files/backup, and copy it to the computer; you can also use a phone file manager to open the same path and find the file.\n3. Install and open the app once on the new phone so the same backup folder is created automatically.\n4. Put keep_account_backup.json into Android/data/com.example.keepaccount/files/backup on the new phone, either by copying it from a computer or by moving/copying it with a phone file manager.\n5. Back in Change Phone on the new phone, tap “Import database data” to import it; duplicate bills are skipped automatically.\n</string>
     <string name="settings_export_database">Export database data</string>
     <string name="settings_import_database">Import database data</string>
     <string name="settings_generate_2026_title">Generate data for January to June 2026?</string>

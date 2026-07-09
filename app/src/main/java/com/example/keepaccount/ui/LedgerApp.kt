@@ -25,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.keepaccount.AddBillActivity
 import com.example.keepaccount.BeautyActivity
 import com.example.keepaccount.CategoryDetailActivity
+import com.example.keepaccount.ChangePhoneActivity
 import com.example.keepaccount.LanguageActivity
 import com.example.keepaccount.MonthlyRankingActivity
 import com.example.keepaccount.R
@@ -93,10 +94,9 @@ fun LedgerApp(
             onCloseRecordDetail = viewModel::closeRecordDetail,
             onDeleteRecord = viewModel::deleteSelectedRecord,
             onEditRecord = viewModel::editSelectedRecord,
-            onExportDatabaseData = viewModel::exportDatabaseData,
-            onImportDatabaseData = viewModel::importDatabaseData,
             onOpenBeautyPage = { context.startActivity(BeautyActivity.createIntent(context)) },
             onOpenLanguagePage = { context.startActivity(LanguageActivity.createIntent(context)) },
+            onOpenChangePhonePage = { context.startActivity(ChangePhoneActivity.createIntent(context)) },
             onMoveTaskToBack = onMoveTaskToBack,
         )
     }
@@ -223,10 +223,9 @@ private fun KeepAccountScreen(
     onCloseRecordDetail: () -> Unit,
     onDeleteRecord: () -> Unit,
     onEditRecord: () -> Unit,
-    onExportDatabaseData: () -> Unit,
-    onImportDatabaseData: () -> Unit,
     onOpenBeautyPage: () -> Unit,
     onOpenLanguagePage: () -> Unit,
+    onOpenChangePhonePage: () -> Unit,
     onMoveTaskToBack: () -> Unit,
 ) {
     val detail = state.categoryDetail
@@ -308,11 +307,9 @@ private fun KeepAccountScreen(
                     )
 
                     AppTab.SETTINGS -> SettingsPage(
-                        state = state,
-                        onExportDatabaseData = onExportDatabaseData,
-                        onImportDatabaseData = onImportDatabaseData,
                         onOpenBeautyPage = onOpenBeautyPage,
                         onOpenLanguagePage = onOpenLanguagePage,
+                        onOpenChangePhonePage = onOpenChangePhonePage,
                     )
                 }
             }

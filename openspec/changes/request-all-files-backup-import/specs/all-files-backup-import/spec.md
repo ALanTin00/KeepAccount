@@ -28,13 +28,13 @@ The app SHALL use app-specific external storage as the fixed backup file locatio
 ### Requirement: 设置页 App 专属外部备份指引
 The settings page SHALL display backup operation guidance that matches app-specific external storage behavior.
 
-#### Scenario: 设置页展示电脑可找的 App 专属目录路径
+#### Scenario: 设置页展示换手机操作步骤
 - **GIVEN** the user opens the settings page
 - **WHEN** backup generate and read actions are visible
 - **THEN** the app SHALL describe the backup location as an app-specific external folder under `Android/data/com.example.keepaccount/files/backup`
 - **AND** the app SHALL remove guidance that tells the user to use Download
-- **AND** the app SHALL mention that connecting the phone to a computer can locate the file in that folder
-- **AND** the app SHALL mention that the file is deleted when the app is uninstalled
+- **AND** the app SHALL mention that the user can use the phone file manager or connect the phone to a computer to copy the backup file
+- **AND** the app SHALL instruct the user to open the app once on the new phone so the folder is created before placing the backup file there\n- **AND** the app SHALL instruct the user to tap the read database data action on the new phone after placing the backup file\n- **AND** the app SHALL mention that the file is deleted when the app is uninstalled
 
 ### Requirement: 无权限备份恢复
 The app SHALL complete backup generation and reading without requesting external storage permissions.
@@ -45,3 +45,26 @@ The app SHALL complete backup generation and reading without requesting external
 - **THEN** the app SHALL complete the operation using only app-specific external storage
 - **AND** the app SHALL NOT open Android all-files access settings
 - **AND** the app SHALL NOT open the system file picker
+### Requirement: 独立换机页面
+The app SHALL provide a dedicated change-phone page for database backup generation and reading.
+
+#### Scenario: 从设置页进入换机页面
+- **GIVEN** the user opens the settings page
+- **WHEN** the page is displayed
+- **THEN** the app SHALL show a centered button labeled `佬凤爱换机` in Simplified Chinese
+- **AND** the app SHALL navigate to a dedicated activity when the button is tapped
+- **AND** the settings page SHALL no longer show backup path guidance or database generate/read buttons directly
+
+#### Scenario: 换机页面承载备份操作
+- **GIVEN** the user opens the change-phone page
+- **WHEN** the page is displayed
+- **THEN** the app SHALL show the backup directory, backup file name, five-step change-phone operation guidance, generate database data action, and read database data action
+- **AND** each guidance step SHALL end with a newline
+- **AND** the guidance SHALL explain old-phone export, copying the file by computer, placing it on the new phone, and importing on the new phone
+
+#### Scenario: 换机页面多语言标题
+- **GIVEN** the user switches app language
+- **WHEN** the change-phone entry or page title is displayed
+- **THEN** Simplified Chinese SHALL use `佬凤爱换机`
+- **AND** Traditional Chinese SHALL use the Traditional Chinese translation
+- **AND** English, Japanese, and Korean SHALL translate the title as change phone
