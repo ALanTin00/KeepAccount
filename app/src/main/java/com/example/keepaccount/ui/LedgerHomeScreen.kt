@@ -84,7 +84,7 @@ internal fun LedgerPage(
                     start = 8.dp,
                     end = 8.dp,
                     top = 8.dp,
-                    bottom = 10.dp,
+                    bottom = 88.dp,
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {

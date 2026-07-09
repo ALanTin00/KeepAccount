@@ -14,6 +14,10 @@ import androidx.core.view.WindowCompat
 class SplashActivity : LocalizedComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!isTaskRoot) {
+            finish()
+            return
+        }
 
         prepareFullscreenWindow()
         val splashImage = ImageView(this).apply {

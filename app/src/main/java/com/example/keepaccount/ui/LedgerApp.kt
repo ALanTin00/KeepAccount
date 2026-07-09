@@ -35,6 +35,7 @@ import java.time.YearMonth
 
 @Composable
 fun LedgerApp(
+    onMoveTaskToBack: () -> Unit,
     viewModel: LedgerViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -96,6 +97,7 @@ fun LedgerApp(
             onImportDatabaseData = viewModel::importDatabaseData,
             onOpenBeautyPage = { context.startActivity(BeautyActivity.createIntent(context)) },
             onOpenLanguagePage = { context.startActivity(LanguageActivity.createIntent(context)) },
+            onMoveTaskToBack = onMoveTaskToBack,
         )
     }
 }
@@ -225,6 +227,7 @@ private fun KeepAccountScreen(
     onImportDatabaseData: () -> Unit,
     onOpenBeautyPage: () -> Unit,
     onOpenLanguagePage: () -> Unit,
+    onMoveTaskToBack: () -> Unit,
 ) {
     val detail = state.categoryDetail
     val statusBarColor = when {
@@ -233,6 +236,18 @@ private fun KeepAccountScreen(
         else -> BrandGreen
     }
     SetStatusBarColor(statusBarColor)
+    BackHandler {
+        when {
+            state.recordDetail != null -> onCloseRecordDetail()
+            state.addBillState?.isNoteEditorVisible == true -> onDismissNoteEditor()
+            state.addBillState?.isDatePickerVisible == true -> onDismissDatePicker()
+            state.addBillState != null -> onCloseAddBill()
+            state.monthPickerTarget != null -> onDismissMonthPicker()
+            state.isTypeFilterVisible -> onDismissTypeFilter()
+            detail != null -> onCloseCategoryDetail()
+            else -> onMoveTaskToBack()
+        }
+    }
 
     Scaffold(
         containerColor = statusBarColor,

@@ -1,10 +1,5 @@
 package com.example.keepaccount.ui
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,18 +16,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.compose.ui.res.stringResource
 import com.example.keepaccount.R
 
@@ -44,27 +33,6 @@ internal fun SettingsPage(
     onOpenBeautyPage: () -> Unit,
     onOpenLanguagePage: () -> Unit,
 ) {
-    val context = LocalContext.current
-    var pendingStorageAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val storagePermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            pendingStorageAction?.invoke()
-        }
-        pendingStorageAction = null
-    }
-    fun runWithDownloadPermission(action: () -> Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
-        ) {
-            action()
-        } else {
-            pendingStorageAction = action
-            storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -117,7 +85,7 @@ internal fun SettingsPage(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = { runWithDownloadPermission(onExportDatabaseData) },
+            onClick = onExportDatabaseData,
             enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()
@@ -129,7 +97,7 @@ internal fun SettingsPage(
         }
         Spacer(modifier = Modifier.height(12.dp))
         Button(
-            onClick = { runWithDownloadPermission(onImportDatabaseData) },
+            onClick = onImportDatabaseData,
             enabled = !state.isBackupWorking,
             modifier = Modifier
                 .fillMaxWidth()

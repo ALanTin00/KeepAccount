@@ -117,10 +117,9 @@
     <string name="statistics_daily_empty_subtitle">當天沒有%1$s記錄</string>
     <string name="ranking_empty_title">暫無排行</string>
     <string name="ranking_empty_subtitle">這個月份還沒有%1$s帳單</string>
-
-    <string name="settings_backup_directory">備份目錄</string>
+    <string name="settings_backup_directory">App 專屬備份目錄</string>
     <string name="settings_backup_file">備份檔案：%1$s</string>
-    <string name="settings_backup_guide">操作指引：點擊「生成資料庫資料」會把備份檔案儲存到 Download/KeepAccount；換手機時把 keep_account_backup.json 放到新手機同一目錄，再點擊「讀取資料庫資料」匯入。Android 10 及以上無需權限，Android 9 及以下會申請儲存權限；匯入完成後頁面會自動重新整理，無需重啟 App。</string>
+    <string name="settings_backup_guide">操作指引：點擊「生成資料庫資料」會把備份檔案儲存到手機儲存空間的 Android/data/com.example.keepaccount/files/backup/keep_account_backup.json；連接電腦後可在這個目錄找到。再次生成會覆蓋舊檔案，不會產生 (1)、(2) 副本。點擊「讀取資料庫資料」會從這個備份檔案匯入。App 卸載後，這個目錄裡的備份檔案會隨 App 資料一起刪除。</string>
     <string name="settings_export_database">生成資料庫資料</string>
     <string name="settings_import_database">讀取資料庫資料</string>
     <string name="settings_generate_2026_title">生成2026年一到六月的資料？</string>
@@ -140,7 +139,6 @@
     <string name="backup_file_open_failed">備份檔案開啟失敗</string>
     <string name="backup_file_write_failed">備份檔案寫入失敗：%1$s</string>
     <string name="backup_directory_create_failed">備份目錄建立失敗：%1$s</string>
-    <string name="backup_file_missing_download">沒有找到備份檔案，請先把 %1$s 放到 %2$s</string>
     <string name="backup_file_read_failed">備份檔案讀取失敗：%1$s</string>
     <string name="backup_file_version_invalid">備份檔案版本無效</string>
     <string name="backup_file_version_too_high">備份檔案版本過高，請升級 App 後再匯入</string>
@@ -148,7 +146,6 @@
     <string name="backup_record_type_invalid">第 %1$d 筆帳單類型無效</string>
     <string name="backup_file_missing_field">備份檔案缺少欄位：%1$s</string>
     <string name="backup_file_field_invalid">備份檔案欄位無效：%1$s</string>
-
     <string name="beauty_category_icons">分類圖示</string>
 
     <string name="language_simplified_chinese">简体中文</string>
@@ -157,4 +154,6 @@
     <string name="language_japanese">日本語</string>
     <string name="language_korean">한국어</string>
     <string name="language_no_restart_needed">切換後會立即重新整理，無需重啟 App</string>
+    <string name="backup_file_missing_app_specific">找不到備份檔案，請先點擊「生成資料庫資料」生成：%1$s</string>
+    <string name="backup_external_storage_unavailable">外部 App 專屬儲存目前不可用，請確認手機儲存空間已掛載後再試</string>
 </resources>

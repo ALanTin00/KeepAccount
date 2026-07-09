@@ -60,7 +60,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         preferences.registerOnSharedPreferenceChangeListener(preferenceChangeListener)
-        seedDemoDataIfNeeded()
         observeLedgerMonth()
         observeStatisticsMonth()
     }
@@ -517,27 +516,6 @@ class LedgerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private fun seedDemoDataIfNeeded() {
-        viewModelScope.launch {
-            if (!preferences.getBoolean(KEY_SEED_DATA_INSERTED, false)) {
-                val start = LocalDate.of(2024, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-                val end = LocalDate.of(2026, 1, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-                if (repository.countRecordsBetween(start, end) == 0) {
-                    repository.addRecords(SeedDataFactory.createRecordsFor2024And2025(zoneId))
-                }
-                preferences.edit().putBoolean(KEY_SEED_DATA_INSERTED, true).apply()
-            }
-            if (!preferences.getBoolean(KEY_JULY_2026_DATA_INSERTED, false)) {
-                val start = LocalDate.of(2026, 7, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-                val end = LocalDate.of(2026, 8, 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-                if (repository.countRecordsBetween(start, end) == 0) {
-                    repository.addRecords(SeedDataFactory.createJuly2026Records(zoneId))
-                }
-                preferences.edit().putBoolean(KEY_JULY_2026_DATA_INSERTED, true).apply()
-            }
-        }
-    }
-
     private fun observeStatisticsMonth() {
         observeStatisticsJob?.cancel()
         observeStatisticsRangeJob?.cancel()
@@ -623,8 +601,6 @@ enum class AppTab {
     SETTINGS,
 }
 
-private const val KEY_SEED_DATA_INSERTED = "seed_data_inserted"
-private const val KEY_JULY_2026_DATA_INSERTED = "july_2026_data_inserted"
 private const val KEY_CATEGORY_ICON_THEME = "category_icon_theme"
 private const val MONTHLY_COMPARISON_MONTH_COUNT = 7L
 

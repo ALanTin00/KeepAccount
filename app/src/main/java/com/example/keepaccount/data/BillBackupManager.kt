@@ -1,11 +1,6 @@
 package com.example.keepaccount.data
 
-import android.content.ContentValues
 import android.content.Context
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import com.example.keepaccount.AppLocaleManager
 import com.example.keepaccount.R
 import java.io.File
@@ -22,13 +17,22 @@ class BillBackupManager(
     }
 
     val backupDirectory: File
-        get() = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), BACKUP_DIRECTORY_NAME)
+        get() = File(externalFilesRoot(), BACKUP_DIRECTORY_NAME)
 
     val backupFile: File
         get() = File(backupDirectory, BACKUP_FILE_NAME)
 
     val backupDirectoryLabel: String
-        get() = "Download/$BACKUP_DIRECTORY_NAME"
+        get() = "Android/data/${appContext.packageName}/files/$BACKUP_DIRECTORY_NAME"
+
+    val backupFileLabel: String
+        get() = "$backupDirectoryLabel/$BACKUP_FILE_NAME"
+
+    fun ensureBackupDirectoryExists(): Boolean =
+        runCatching {
+            createBackupDirectoryIfNeeded()
+            true
+        }.getOrDefault(false)
 
     fun export(records: List<BillRecordEntity>): BackupExportResult {
         val backup = BillBackupFile(
@@ -38,26 +42,21 @@ class BillBackupManager(
         )
         val content = backup.toJson().toString(JSON_INDENT_SPACES)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            writeToDownloadsWithMediaStore(content)
-        } else {
-            writeToDownloadsWithFile(content)
-        }
+        writeToAppSpecificExternalStorage(content)
 
         return BackupExportResult(
-            filePath = "$backupDirectoryLabel/$BACKUP_FILE_NAME",
+            filePath = backupFileLabel,
             directoryPath = backupDirectoryLabel,
             recordCount = records.size,
         )
     }
 
     fun readRecords(): List<BillRecordEntity> {
-        val content = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            readFromDownloadsWithMediaStore()
-        } else {
-            readFromDownloadsWithFile()
-        }
+        val content = readFromAppSpecificExternalStorage()
+        return parseRecords(content)
+    }
 
+    private fun parseRecords(content: String): List<BillRecordEntity> {
         val backup = runCatching {
             BillBackupFile.fromJson(JSONObject(content))
         }.getOrElse {
@@ -72,37 +71,8 @@ class BillBackupManager(
         return backup.records.map { it.toEntity() }
     }
 
-    private fun writeToDownloadsWithMediaStore(content: String) {
-        val resolver = appContext.contentResolver
-        findDownloadBackupUri()?.let { resolver.delete(it, null, null) }
-
-        val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, BACKUP_FILE_NAME)
-            put(MediaStore.Downloads.MIME_TYPE, BACKUP_MIME_TYPE)
-            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$BACKUP_DIRECTORY_NAME")
-            put(MediaStore.Downloads.IS_PENDING, 1)
-        }
-        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-            ?: throw BackupException(localizedString(R.string.backup_file_create_failed))
-
-        runCatching {
-            resolver.openOutputStream(uri, "wt")?.use { output ->
-                output.write(content.toByteArray(Charsets.UTF_8))
-            } ?: throw BackupException(localizedString(R.string.backup_file_open_failed))
-            ContentValues().apply {
-                put(MediaStore.Downloads.IS_PENDING, 0)
-            }.also { resolver.update(uri, it, null, null) }
-        }.getOrElse {
-            resolver.delete(uri, null, null)
-            throw BackupException(localizedString(R.string.backup_file_write_failed, it.localizedMessage ?: localizedString(R.string.common_unknown_error)))
-        }
-    }
-
-    private fun writeToDownloadsWithFile(content: String) {
-        val directory = backupDirectory
-        if (!directory.exists() && !directory.mkdirs()) {
-            throw BackupException(localizedString(R.string.backup_directory_create_failed, directory.absolutePath))
-        }
+    private fun writeToAppSpecificExternalStorage(content: String) {
+        createBackupDirectoryIfNeeded()
 
         runCatching {
             backupFile.writeText(content, Charsets.UTF_8)
@@ -111,23 +81,17 @@ class BillBackupManager(
         }
     }
 
-    private fun readFromDownloadsWithMediaStore(): String {
-        val uri = findDownloadBackupUri()
-            ?: throw BackupException(localizedString(R.string.backup_file_missing_download, BACKUP_FILE_NAME, backupDirectoryLabel))
-
-        return runCatching {
-            appContext.contentResolver.openInputStream(uri)?.use { input ->
-                input.reader(Charsets.UTF_8).readText()
-            } ?: throw BackupException(localizedString(R.string.backup_file_open_failed))
-        }.getOrElse {
-            throw BackupException(localizedString(R.string.backup_file_read_failed, it.localizedMessage ?: localizedString(R.string.common_unknown_error)))
+    private fun createBackupDirectoryIfNeeded() {
+        val directory = backupDirectory
+        if (!directory.exists() && !directory.mkdirs()) {
+            throw BackupException(localizedString(R.string.backup_directory_create_failed, directory.absolutePath))
         }
     }
 
-    private fun readFromDownloadsWithFile(): String {
+    private fun readFromAppSpecificExternalStorage(): String {
         val file = backupFile
         if (!file.exists()) {
-            throw BackupException(localizedString(R.string.backup_file_missing_download, BACKUP_FILE_NAME, backupDirectory.absolutePath))
+            throw BackupException(localizedString(R.string.backup_file_missing_app_specific, backupFileLabel))
         }
 
         return runCatching {
@@ -137,40 +101,20 @@ class BillBackupManager(
         }
     }
 
+    private fun externalFilesRoot(): File =
+        appContext.getExternalFilesDir(null)
+            ?: throw BackupException(localizedString(R.string.backup_external_storage_unavailable))
 
     private fun localizedString(resId: Int, vararg args: Any): String =
         AppLocaleManager.wrap(appContext).getString(resId, *args)
-    private fun findDownloadBackupUri(): Uri? {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
-
-        val projection = arrayOf(MediaStore.Downloads._ID)
-        val selection = "${MediaStore.Downloads.DISPLAY_NAME}=? AND ${MediaStore.Downloads.RELATIVE_PATH}=?"
-        val selectionArgs = arrayOf(BACKUP_FILE_NAME, "${Environment.DIRECTORY_DOWNLOADS}/$BACKUP_DIRECTORY_NAME/")
-        val sortOrder = "${MediaStore.Downloads.DATE_MODIFIED} DESC"
-        appContext.contentResolver.query(
-            MediaStore.Downloads.EXTERNAL_CONTENT_URI,
-            projection,
-            selection,
-            selectionArgs,
-            sortOrder,
-        )?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Downloads._ID))
-                return Uri.withAppendedPath(MediaStore.Downloads.EXTERNAL_CONTENT_URI, id.toString())
-            }
-        }
-        return null
-    }
 
     companion object {
-        const val BACKUP_DIRECTORY_NAME = "KeepAccount"
+        const val BACKUP_DIRECTORY_NAME = "backup"
         const val BACKUP_FILE_NAME = "keep_account_backup.json"
         const val CURRENT_BACKUP_VERSION = 1
-        const val BACKUP_MIME_TYPE = "application/json"
         private const val JSON_INDENT_SPACES = 2
     }
 }
-
 data class BackupExportResult(
     val filePath: String,
     val directoryPath: String,

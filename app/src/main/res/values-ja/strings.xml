@@ -108,9 +108,9 @@
     <string name="statistics_daily_empty_subtitle">この日の%1$s記録はありません</string>
     <string name="ranking_empty_title">ランキングがありません</string>
     <string name="ranking_empty_subtitle">この月には%1$sの記録がありません</string>
-    <string name="settings_backup_directory">バックアップ先</string>
+    <string name="settings_backup_directory">アプリ専用バックアップフォルダ</string>
     <string name="settings_backup_file">バックアップファイル：%1$s</string>
-    <string name="settings_backup_guide">手順：「データベースデータを生成」をタップすると、バックアップファイルが Download/KeepAccount に保存されます。機種変更時は keep_account_backup.json を新しい端末の同じフォルダに置き、「データベースデータを読み取る」をタップしてインポートしてください。Android 10 以上では権限不要、Android 9 以下ではストレージ権限を要求します。インポート後はページが自動更新され、アプリの再起動は不要です。</string>
+    <string name="settings_backup_guide">手順：「データベースデータを生成」をタップすると、バックアップファイルを端末ストレージの Android/data/com.example.keepaccount/files/backup/keep_account_backup.json に保存します。端末をパソコンに接続すると、このフォルダで見つけられます。もう一度生成すると古いファイルを上書きし、(1) や (2) のコピーは作成しません。「データベースデータを読み取る」をタップすると、このバックアップファイルからインポートします。アプリをアンインストールすると、このフォルダ内のバックアップファイルもアプリデータと一緒に削除されます。</string>
     <string name="settings_export_database">データベースデータを生成</string>
     <string name="settings_import_database">データベースデータを読み取る</string>
     <string name="settings_generate_2026_title">2026年1月から6月のデータを生成しますか？</string>
@@ -129,7 +129,6 @@
     <string name="backup_file_open_failed">バックアップファイルを開けませんでした</string>
     <string name="backup_file_write_failed">バックアップファイルの書き込みに失敗しました：%1$s</string>
     <string name="backup_directory_create_failed">バックアップフォルダの作成に失敗しました：%1$s</string>
-    <string name="backup_file_missing_download">バックアップファイルが見つかりません。先に %1$s を %2$s に置いてください</string>
     <string name="backup_file_read_failed">バックアップファイルの読み取りに失敗しました：%1$s</string>
     <string name="backup_file_version_invalid">バックアップファイルのバージョンが無効です</string>
     <string name="backup_file_version_too_high">バックアップファイルのバージョンが高すぎます。アプリを更新してからインポートしてください</string>
@@ -144,4 +143,6 @@
     <string name="language_japanese">日本語</string>
     <string name="language_korean">한국어</string>
     <string name="language_no_restart_needed">切り替え後すぐに更新されます。アプリの再起動は不要です。</string>
+    <string name="backup_file_missing_app_specific">バックアップファイルが見つかりません。先に「データベースデータを生成」をタップして作成してください：%1$s</string>
+    <string name="backup_external_storage_unavailable">アプリ専用の外部ストレージを利用できません。端末ストレージがマウントされていることを確認してから再試行してください</string>
 </resources>

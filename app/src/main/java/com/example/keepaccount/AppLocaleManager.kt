@@ -2,11 +2,15 @@ package com.example.keepaccount
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.LocaleList
 import java.util.Locale
 
 object AppLocaleManager {
     private const val PREFS_NAME = "keep_account_settings"
     private const val KEY_APP_LANGUAGE = "app_language"
+    private const val KEY_APP_LANGUAGE_SOURCE = "app_language_source"
+    private const val LANGUAGE_SOURCE_MANUAL = "manual"
+    private const val LANGUAGE_SOURCE_SYSTEM = "system"
 
     const val DEFAULT_LANGUAGE_CODE = "en"
 
@@ -22,11 +26,19 @@ object AppLocaleManager {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val saved = preferences.getString(KEY_APP_LANGUAGE, null)
         val savedCode = supportedLanguages.firstOrNull { it.code == saved }?.code
-        if (savedCode != null) return savedCode
+        val source = preferences.getString(KEY_APP_LANGUAGE_SOURCE, null)
+        if (source == LANGUAGE_SOURCE_MANUAL && savedCode != null) return savedCode
+        if (source == null && savedCode != null && savedCode != DEFAULT_LANGUAGE_CODE) {
+            preferences.edit()
+                .putString(KEY_APP_LANGUAGE_SOURCE, LANGUAGE_SOURCE_MANUAL)
+                .apply()
+            return savedCode
+        }
 
         val detectedCode = detectSystemLanguageCode(context.resources.configuration)
         preferences.edit()
             .putString(KEY_APP_LANGUAGE, detectedCode)
+            .putString(KEY_APP_LANGUAGE_SOURCE, LANGUAGE_SOURCE_SYSTEM)
             .apply()
         return detectedCode
     }
@@ -36,6 +48,7 @@ object AppLocaleManager {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_APP_LANGUAGE, normalized)
+            .putString(KEY_APP_LANGUAGE_SOURCE, LANGUAGE_SOURCE_MANUAL)
             .apply()
     }
 
@@ -51,6 +64,11 @@ object AppLocaleManager {
     }
 
     private fun detectSystemLanguageCode(configuration: Configuration): String {
+        val defaultLocales = LocaleList.getDefault()
+        for (index in 0 until defaultLocales.size()) {
+            matchSystemLocale(defaultLocales[index])?.let { return it }
+        }
+
         val locales = configuration.locales
         for (index in 0 until locales.size()) {
             matchSystemLocale(locales[index])?.let { return it }

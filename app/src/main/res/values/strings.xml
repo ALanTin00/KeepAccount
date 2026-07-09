@@ -117,10 +117,9 @@
     <string name="statistics_daily_empty_subtitle">当天没有%1$s记录</string>
     <string name="ranking_empty_title">暂无排行</string>
     <string name="ranking_empty_subtitle">这个月份还没有%1$s账单</string>
-
-    <string name="settings_backup_directory">备份目录</string>
+    <string name="settings_backup_directory">App专属备份目录</string>
     <string name="settings_backup_file">备份文件：%1$s</string>
-    <string name="settings_backup_guide">操作指引：点击“生成数据库数据”会把备份文件保存到 Download/KeepAccount；换手机时把 keep_account_backup.json 放到新手机同一目录，再点击“读取数据库数据”导入。Android 10 及以上无需权限，Android 9 及以下会申请存储权限；导入完成后页面会自动刷新，无需重启 App。</string>
+    <string name="settings_backup_guide">操作指引：点击“生成数据库数据”会把备份文件保存到手机存储的 Android/data/com.example.keepaccount/files/backup/keep_account_backup.json；连接电脑后可在这个目录找到。再次生成会覆盖旧文件，不会生成 (1)、(2) 副本。点击“读取数据库数据”会从这个备份文件导入。App 卸载后，这个目录里的备份文件会随 App 数据一起删除。</string>
     <string name="settings_export_database">生成数据库数据</string>
     <string name="settings_import_database">读取数据库数据</string>
     <string name="settings_generate_2026_title">生成2026年一到六月的数据？</string>
@@ -140,7 +139,6 @@
     <string name="backup_file_open_failed">备份文件打开失败</string>
     <string name="backup_file_write_failed">备份文件写入失败：%1$s</string>
     <string name="backup_directory_create_failed">备份目录创建失败：%1$s</string>
-    <string name="backup_file_missing_download">没有找到备份文件，请先把 %1$s 放到 %2$s</string>
     <string name="backup_file_read_failed">备份文件读取失败：%1$s</string>
     <string name="backup_file_version_invalid">备份文件版本无效</string>
     <string name="backup_file_version_too_high">备份文件版本过高，请升级 App 后再导入</string>
@@ -148,7 +146,6 @@
     <string name="backup_record_type_invalid">第 %1$d 条账单类型无效</string>
     <string name="backup_file_missing_field">备份文件缺少字段：%1$s</string>
     <string name="backup_file_field_invalid">备份文件字段无效：%1$s</string>
-
     <string name="beauty_category_icons">分类图标</string>
 
     <string name="language_simplified_chinese">简体中文</string>
@@ -157,4 +154,6 @@
     <string name="language_japanese">日本語</string>
     <string name="language_korean">한국어</string>
     <string name="language_no_restart_needed">切换后会立即刷新，无需重启 App</string>
+    <string name="backup_file_missing_app_specific">没有找到备份文件，请先点击“生成数据库数据”生成：%1$s</string>
+    <string name="backup_external_storage_unavailable">外部 App 专属存储当前不可用，请确认手机存储已挂载后再试</string>
 </resources>

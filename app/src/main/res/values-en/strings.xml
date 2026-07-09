@@ -108,9 +108,9 @@
     <string name="statistics_daily_empty_subtitle">No %1$s records that day</string>
     <string name="ranking_empty_title">No ranking</string>
     <string name="ranking_empty_subtitle">No %1$s bills this month</string>
-    <string name="settings_backup_directory">Backup directory</string>
+    <string name="settings_backup_directory">App-specific backup folder</string>
     <string name="settings_backup_file">Backup file: %1$s</string>
-    <string name="settings_backup_guide">Guide: Tap “Export database data” to save the backup file to Download/KeepAccount. When changing phones, place keep_account_backup.json in the same folder on the new phone, then tap “Import database data”. Android 10 and above do not need storage permission; Android 9 and below will request storage permission. The page refreshes automatically after import, with no app restart needed.</string>
+    <string name="settings_backup_guide">Guide: Tap “Export database data” to save the backup file to phone storage at Android/data/com.example.keepaccount/files/backup/keep_account_backup.json. After connecting the phone to a computer, you can find it in that folder. Generating again overwrites the old file and will not create (1) or (2) copies. Tap “Import database data” to import from this backup file. The backup file in this folder is deleted with app data when the app is uninstalled.</string>
     <string name="settings_export_database">Export database data</string>
     <string name="settings_import_database">Import database data</string>
     <string name="settings_generate_2026_title">Generate data for January to June 2026?</string>
@@ -129,7 +129,6 @@
     <string name="backup_file_open_failed">Failed to open backup file</string>
     <string name="backup_file_write_failed">Failed to write backup file: %1$s</string>
     <string name="backup_directory_create_failed">Failed to create backup directory: %1$s</string>
-    <string name="backup_file_missing_download">Backup file not found. Put %1$s in %2$s first</string>
     <string name="backup_file_read_failed">Failed to read backup file: %1$s</string>
     <string name="backup_file_version_invalid">Invalid backup file version</string>
     <string name="backup_file_version_too_high">Backup file version is too high. Update the app and import again.</string>
@@ -144,4 +143,6 @@
     <string name="language_japanese">日本語</string>
     <string name="language_korean">한국어</string>
     <string name="language_no_restart_needed">The UI refreshes immediately after switching. No app restart needed.</string>
+    <string name="backup_file_missing_app_specific">Backup file not found. Tap “Export database data” first to create it: %1$s</string>
+    <string name="backup_external_storage_unavailable">App-specific external storage is unavailable. Make sure phone storage is mounted, then try again.</string>
 </resources>
