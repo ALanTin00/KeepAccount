@@ -14,6 +14,15 @@
     <string name="settings_beauty_subtitle">帳簿アイコンのスタイルを切り替えます</string>
     <string name="settings_language_subtitle">表示言語を切り替えます</string>
     <string name="settings_change_phone_subtitle">帳簿データをバックアップして読み取ります</string>
+    <string name="change_phone_intro_title">機種変更前にバックアップし、新しい端末で読み取ります</string>
+    <string name="change_phone_intro_subtitle">古い端末でバックアップを作成し、新しい端末の同じ場所に置いて読み取ります。重複した記録は自動でスキップされます。</string>
+    <string name="change_phone_old_phone_title">古い端末</string>
+    <string name="change_phone_old_phone_subtitle">古い端末でバックアップファイルを作成します</string>
+    <string name="change_phone_new_phone_title">新しい端末</string>
+    <string name="change_phone_new_phone_subtitle">バックアップファイルを新しい端末の同じ場所に置いて読み取ります</string>
+    <string name="change_phone_file_location_title">ファイルの場所</string>
+    <string name="change_phone_guide_title">操作手順</string>
+    <string name="change_phone_result_placeholder">生成または読み取りの結果がここに表示されます</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">収入</string>
     <string name="bill_type_excluded">収支に含めない</string>

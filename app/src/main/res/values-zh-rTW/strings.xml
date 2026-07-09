@@ -15,6 +15,15 @@
     <string name="settings_beauty_subtitle">切換帳本圖示風格</string>
     <string name="settings_language_subtitle">切換顯示語言</string>
     <string name="settings_change_phone_subtitle">備份和讀取帳本資料</string>
+    <string name="change_phone_intro_title">換手機前先備份，換手機後再讀取</string>
+    <string name="change_phone_intro_subtitle">舊手機生成備份檔案，新手機放到同一路徑後讀取，重複帳單會自動跳過。</string>
+    <string name="change_phone_old_phone_title">舊手機</string>
+    <string name="change_phone_old_phone_subtitle">在舊手機點擊生成備份檔案</string>
+    <string name="change_phone_new_phone_title">新手機</string>
+    <string name="change_phone_new_phone_subtitle">把備份檔案放到新手機同一路徑後讀取</string>
+    <string name="change_phone_file_location_title">檔案位置</string>
+    <string name="change_phone_guide_title">操作指引</string>
+    <string name="change_phone_result_placeholder">生成或讀取後，結果會顯示在這裡</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">入帳</string>
     <string name="bill_type_excluded">不計入收支</string>

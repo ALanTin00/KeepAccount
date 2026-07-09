@@ -15,6 +15,15 @@
     <string name="settings_beauty_subtitle">切换账本图标风格</string>
     <string name="settings_language_subtitle">切换显示语言</string>
     <string name="settings_change_phone_subtitle">备份和读取账本数据</string>
+    <string name="change_phone_intro_title">换手机前先备份，换手机后再读取</string>
+    <string name="change_phone_intro_subtitle">旧手机生成备份文件，新手机放到同一路径后读取，重复账单会自动跳过。</string>
+    <string name="change_phone_old_phone_title">旧手机</string>
+    <string name="change_phone_old_phone_subtitle">在旧手机点击生成备份文件</string>
+    <string name="change_phone_new_phone_title">新手机</string>
+    <string name="change_phone_new_phone_subtitle">把备份文件放到新手机同一路径后读取</string>
+    <string name="change_phone_file_location_title">文件位置</string>
+    <string name="change_phone_guide_title">操作指引</string>
+    <string name="change_phone_result_placeholder">生成或读取后，结果会显示在这里</string>
     <string name="bill_type_expense">支出</string>
     <string name="bill_type_income">入账</string>
     <string name="bill_type_excluded">不计入收支</string>

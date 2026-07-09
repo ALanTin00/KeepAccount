@@ -14,6 +14,15 @@
     <string name="settings_beauty_subtitle">Switch the ledger icon style</string>
     <string name="settings_language_subtitle">Change the display language</string>
     <string name="settings_change_phone_subtitle">Back up and import ledger data</string>
+    <string name="change_phone_intro_title">Back up before switching phones, then import on the new phone</string>
+    <string name="change_phone_intro_subtitle">Export the backup on the old phone, place it in the same path on the new phone, then import it. Duplicate bills are skipped automatically.</string>
+    <string name="change_phone_old_phone_title">Old phone</string>
+    <string name="change_phone_old_phone_subtitle">Tap export on the old phone to create the backup file</string>
+    <string name="change_phone_new_phone_title">New phone</string>
+    <string name="change_phone_new_phone_subtitle">Place the backup file in the same path on the new phone, then import it</string>
+    <string name="change_phone_file_location_title">File location</string>
+    <string name="change_phone_guide_title">Guide</string>
+    <string name="change_phone_result_placeholder">Export or import results will appear here</string>
     <string name="bill_type_expense">Expense</string>
     <string name="bill_type_income">Income</string>
     <string name="bill_type_excluded">Excluded</string>
