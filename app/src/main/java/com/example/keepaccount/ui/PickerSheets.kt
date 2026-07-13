@@ -26,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -118,16 +119,38 @@ internal fun NoteEditorSheet(
             OutlinedTextField(
                 value = note,
                 onValueChange = onValueChange,
-                placeholder = { Text(stringResource(R.string.note_placeholder)) },
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.note_placeholder),
+                        color = Color(0xFFB4B8B5),
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(80.dp),
+                    .height(88.dp),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF202124)),
                 maxLines = 2,
+                shape = RoundedCornerShape(10.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF202124),
+                    unfocusedTextColor = Color(0xFF202124),
+                    focusedContainerColor = Color(0xFFF7F8F7),
+                    unfocusedContainerColor = Color(0xFFF7F8F7),
+                    cursorColor = BrandGreen,
+                    focusedBorderColor = BrandGreen,
+                    unfocusedBorderColor = Color(0xFFE0E5E2),
+                    focusedPlaceholderColor = Color(0xFFB4B8B5),
+                    unfocusedPlaceholderColor = Color(0xFFB4B8B5),
+                ),
             )
             Text(
                 text = "${note.length}/30",
-                color = MutedText,
+                color = if (note.length > 30) Color(0xFFE05A47) else Color(0xFFA2A9A4),
                 style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                textAlign = TextAlign.End,
             )
             Spacer(modifier = Modifier.height(52.dp))
             Button(
