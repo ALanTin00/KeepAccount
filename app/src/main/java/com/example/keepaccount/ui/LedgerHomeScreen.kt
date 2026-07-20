@@ -244,13 +244,13 @@ internal fun DayGroupCard(
                 )
                 Text(
                     text = stringResource(R.string.ledger_day_expense, "%.2f".format(group.expenseCents / 100.0)),
-                    color = Color(0xFF8D5A2B),
+                    color = ExpenseText,
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Spacer(modifier = Modifier.width(14.dp))
                 Text(
                     text = stringResource(R.string.ledger_day_income, "%.2f".format(group.incomeCents / 100.0)),
-                    color = Color(0xFF1E6C9C),
+                    color = IncomeText,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

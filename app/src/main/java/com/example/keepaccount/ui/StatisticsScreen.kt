@@ -151,8 +151,7 @@ internal fun StatisticsPage(
                     summaries = summaries,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(230.dp)
-                        .padding(horizontal = 8.dp),
+                        .height((240 + (summaries.size - 6).coerceAtLeast(0) * 6).coerceAtMost(288).dp),
                 )
             }
             items(summaries) { summary ->
@@ -316,87 +315,140 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (summaries.isEmpty()) return@Canvas
 
-            val strokeWidth = 30.dp.toPx()
-            val radius = min(size.width, size.height) * 0.26f
-            val center = Offset(size.width / 2f, size.height / 2f + 8.dp.toPx())
+            val strokeWidth = 32.dp.toPx()
+            val outerRadius = min(size.width * 0.24f, size.height * 0.32f)
+            val radius = (outerRadius - strokeWidth / 2f).coerceAtLeast(1f)
+            val innerRadius = (outerRadius - strokeWidth).coerceAtLeast(0f)
+            val center = Offset(size.width / 2f, size.height / 2f)
             val arcTopLeft = Offset(center.x - radius, center.y - radius)
             val arcSize = Size(radius * 2f, radius * 2f)
-            val labels = mutableListOf<DonutLabel>()
+            val edgePadding = 8.dp.toPx()
+            val labelRadius = outerRadius + 10.dp.toPx()
+            val bendGap = 5.dp.toPx()
+            val horizontalLength = 8.dp.toPx()
+            val textGap = 4.dp.toPx()
+            val centerGap = 6.dp.toPx()
+            val maxLabelWidth = min(
+                100.dp.toPx(),
+                (size.width / 2f - outerRadius - edgePadding - bendGap - horizontalLength - textGap)
+                    .coerceAtLeast(24.dp.toPx()),
+            )
             val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = 10.dp.toPx()
-                color = MutedText.toArgbInt()
+                textSize = 11.dp.toPx()
+                color = Color(0xFF727875).toArgbInt()
+                textAlign = Paint.Align.LEFT
             }
-            val chartEdgePadding = 6.dp.toPx()
+            val lineColor = Color(0xFFD9DEDB)
+            val labels = mutableListOf<DonutLabel>()
             var startAngle = -90f
 
-            summaries.forEachIndexed { index, item ->
+            summaries.forEach { item ->
                 val sweep = item.percent * 360f
-                drawArc(
-                    color = colors[index % colors.size],
-                    startAngle = startAngle,
-                    sweepAngle = sweep,
-                    useCenter = false,
-                    topLeft = arcTopLeft,
-                    size = arcSize,
-                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
-                )
-
                 val midAngle = startAngle + sweep / 2f
                 val radians = midAngle.toRadians()
                 val side = if (cos(radians) >= 0f) DonutLabelSide.RIGHT else DonutLabelSide.LEFT
-                val labelText = "${context.localizedCategoryName(item.category)} ${"%.2f".format(item.percent * 100)}%"
-                val labelWidth = textPaint.measureText(labelText)
+                val labelText = buildDonutLabelText(
+                    categoryName = context.localizedCategoryName(item.category),
+                    percent = item.percent,
+                    maxWidth = maxLabelWidth,
+                    paint = textPaint,
+                )
                 labels += DonutLabel(
                     text = labelText,
-                    labelWidth = labelWidth,
-                    color = colors[index % colors.size],
+                    textWidth = textPaint.measureText(labelText),
                     anchor = Offset(
-                        x = center.x + cos(radians) * (radius + strokeWidth / 2f),
-                        y = center.y + sin(radians) * (radius + strokeWidth / 2f),
+                        x = center.x + cos(radians) * outerRadius,
+                        y = center.y + sin(radians) * outerRadius,
                     ),
-                    elbow = Offset(
-                        x = center.x + cos(radians) * (radius + strokeWidth / 2f + 16.dp.toPx()),
-                        y = center.y + sin(radians) * (radius + strokeWidth / 2f + 16.dp.toPx()),
-                    ),
-                    labelX = if (side == DonutLabelSide.RIGHT) {
-                        min(size.width - chartEdgePadding - labelWidth, center.x + radius + 70.dp.toPx())
-                    } else {
-                        max(chartEdgePadding + labelWidth, center.x - radius - 70.dp.toPx())
-                    },
-                    desiredY = center.y + sin(radians) * (radius + 36.dp.toPx()),
+                    desiredY = center.y + sin(radians) * labelRadius,
                     side = side,
                 )
                 startAngle += sweep
             }
 
+            val textHeight = textPaint.descent() - textPaint.ascent()
             val adjustedLabels = adjustDonutLabels(
                 labels = labels,
-                minY = 16.dp.toPx(),
-                maxY = size.height - 12.dp.toPx(),
-                spacing = 16.dp.toPx(),
+                minY = edgePadding + textHeight / 2f,
+                maxY = size.height - edgePadding - textHeight / 2f,
+                spacing = textHeight + 5.dp.toPx(),
             )
-            adjustedLabels.forEach { label ->
-                val labelEnd = Offset(
-                    x = if (label.side == DonutLabelSide.RIGHT) label.labelX - 4.dp.toPx() else label.labelX + 4.dp.toPx(),
+
+            fun labelLayout(label: DonutLabel): DonutLabelLayout {
+                val verticalDistance = (
+                    kotlin.math.abs(label.adjustedY - center.y) - textHeight / 2f
+                ).coerceAtLeast(0f)
+                val circleHalfWidth = if (verticalDistance < outerRadius) {
+                    kotlin.math.sqrt(outerRadius * outerRadius - verticalDistance * verticalDistance)
+                } else {
+                    0f
+                }
+                val safeHalfWidth = max(circleHalfWidth, centerGap)
+                val sideDirection = if (label.side == DonutLabelSide.RIGHT) 1f else -1f
+                val bendPoint = Offset(
+                    x = center.x + sideDirection * (safeHalfWidth + bendGap),
                     y = label.adjustedY,
                 )
+                val lineEnd = Offset(
+                    x = bendPoint.x + sideDirection * horizontalLength,
+                    y = label.adjustedY,
+                )
+                val desiredTextX = if (label.side == DonutLabelSide.RIGHT) {
+                    lineEnd.x + textGap
+                } else {
+                    lineEnd.x - textGap - label.textWidth
+                }
+                val maxTextX = (size.width - edgePadding - label.textWidth).coerceAtLeast(edgePadding)
+                return DonutLabelLayout(
+                    bendPoint = bendPoint,
+                    lineEnd = lineEnd,
+                    textX = desiredTextX.coerceIn(edgePadding, maxTextX),
+                )
+            }
+
+            // Leaders stay behind the donut, so collision routing can never show inside it.
+            adjustedLabels.forEach { label ->
+                val layout = labelLayout(label)
                 drawLine(
-                    color = label.color.copy(alpha = 0.55f),
+                    color = lineColor,
                     start = label.anchor,
-                    end = label.elbow,
+                    end = layout.bendPoint,
                     strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round,
                 )
                 drawLine(
-                    color = label.color.copy(alpha = 0.55f),
-                    start = label.elbow,
-                    end = labelEnd,
+                    color = lineColor,
+                    start = layout.bendPoint,
+                    end = layout.lineEnd,
                     strokeWidth = 1.dp.toPx(),
+                    cap = StrokeCap.Round,
                 )
-                textPaint.textAlign = if (label.side == DonutLabelSide.RIGHT) Paint.Align.LEFT else Paint.Align.RIGHT
+            }
+
+            startAngle = -90f
+            summaries.forEachIndexed { index, item ->
+                val sweep = item.percent * 360f
+                val gapAngle = min(1.2f, sweep * 0.15f)
+                drawArc(
+                    color = colors[index % colors.size],
+                    startAngle = startAngle + gapAngle / 2f,
+                    sweepAngle = (sweep - gapAngle).coerceAtLeast(0.01f),
+                    useCenter = false,
+                    topLeft = arcTopLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Butt),
+                )
+                startAngle += sweep
+            }
+            drawCircle(color = Color.White, radius = innerRadius, center = center)
+
+            val baselineOffset = -(textPaint.ascent() + textPaint.descent()) / 2f
+            adjustedLabels.forEach { label ->
+                val layout = labelLayout(label)
                 drawContext.canvas.nativeCanvas.drawText(
                     label.text,
-                    label.labelX,
-                    label.adjustedY + 3.dp.toPx(),
+                    layout.textX,
+                    label.adjustedY + baselineOffset,
                     textPaint,
                 )
             }
@@ -406,7 +458,6 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
         }
     }
 }
-
 @Composable
 internal fun CategorySummaryRow(
     summary: CategorySummary,
@@ -1068,14 +1119,17 @@ private data class ChartTooltipHitBox(
 
 private data class DonutLabel(
     val text: String,
-    val labelWidth: Float,
-    val color: Color,
+    val textWidth: Float,
     val anchor: Offset,
-    val elbow: Offset,
-    val labelX: Float,
     val desiredY: Float,
     val side: DonutLabelSide,
     val adjustedY: Float = desiredY,
+)
+
+private data class DonutLabelLayout(
+    val bendPoint: Offset,
+    val lineEnd: Offset,
+    val textX: Float,
 )
 
 private enum class DonutLabelSide {
@@ -1136,17 +1190,56 @@ private fun adjustDonutLabels(
     labels.groupBy { it.side }
         .flatMap { (_, sideLabels) ->
             val sorted = sideLabels.sortedBy { it.desiredY }
-            val adjusted = sorted.runningFold(minY - spacing) { previous, label ->
-                max(label.desiredY, previous + spacing)
-            }.drop(1).toMutableList()
-            val overflow = (adjusted.lastOrNull() ?: minY) - maxY
-            if (overflow > 0f) {
-                adjusted.indices.forEach { index ->
-                    adjusted[index] = (adjusted[index] - overflow).coerceAtLeast(minY)
+            if (sorted.size <= 1) {
+                return@flatMap sorted.map { it.copy(adjustedY = it.desiredY.coerceIn(minY, maxY)) }
+            }
+
+            val availableSpacing = ((maxY - minY) / (sorted.size - 1)).coerceAtLeast(0f)
+            val actualSpacing = min(spacing, availableSpacing)
+            val adjusted = sorted.map { it.desiredY.coerceIn(minY, maxY) }.toMutableList()
+
+            for (index in 1..adjusted.lastIndex) {
+                adjusted[index] = max(adjusted[index], adjusted[index - 1] + actualSpacing)
+            }
+            if (adjusted.last() > maxY) {
+                adjusted[adjusted.lastIndex] = maxY
+                for (index in adjusted.lastIndex - 1 downTo 0) {
+                    adjusted[index] = min(adjusted[index], adjusted[index + 1] - actualSpacing)
                 }
             }
-            sorted.mapIndexed { index, label -> label.copy(adjustedY = adjusted[index].coerceIn(minY, maxY)) }
+            if (adjusted.first() < minY) {
+                adjusted[0] = minY
+                for (index in 1..adjusted.lastIndex) {
+                    adjusted[index] = max(adjusted[index], adjusted[index - 1] + actualSpacing)
+                }
+            }
+
+            sorted.mapIndexed { index, label ->
+                label.copy(adjustedY = adjusted[index].coerceIn(minY, maxY))
+            }
         }
+
+private fun buildDonutLabelText(
+    categoryName: String,
+    percent: Float,
+    maxWidth: Float,
+    paint: Paint,
+): String {
+    val percentText = "%.2f%%".format(percent * 100f)
+    val suffix = " $percentText"
+    val categoryWidth = maxWidth - paint.measureText(suffix)
+    if (categoryWidth <= paint.measureText("…")) return percentText
+    return ellipsizeDonutText(categoryName, categoryWidth, paint) + suffix
+}
+
+private fun ellipsizeDonutText(text: String, maxWidth: Float, paint: Paint): String {
+    if (paint.measureText(text) <= maxWidth) return text
+    val ellipsis = "…"
+    val availableWidth = maxWidth - paint.measureText(ellipsis)
+    if (availableWidth <= 0f) return ellipsis
+    val characterCount = paint.breakText(text, true, availableWidth, null)
+    return text.take(characterCount).trimEnd() + ellipsis
+}
 
 private fun chartColors(): List<Color> = listOf(
     BrandGreen,

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.keepaccount.R
 import com.example.keepaccount.data.BillRecordEntity
@@ -127,11 +128,24 @@ internal fun DetailRecordRow(record: BillRecordEntity) {
     ) {
         CategoryIcon(category = record.category)
         Spacer(modifier = Modifier.width(14.dp))
-        Text(
-            text = localizedCategoryName(record.category),
-            modifier = Modifier.weight(1f),
-            fontWeight = FontWeight.SemiBold,
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = localizedCategoryName(record.category),
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (record.note.isNotBlank()) {
+                Text(
+                    text = record.note,
+                    color = MutedText,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
         Column(horizontalAlignment = Alignment.End) {
             Text(
                 text = signedCentsText(record),
