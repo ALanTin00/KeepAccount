@@ -1,6 +1,8 @@
 package com.example.keepaccount.ui
 
 import android.app.Activity
+import android.os.Build
+import android.view.Window
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.Color
@@ -21,16 +23,28 @@ internal fun SetStatusBarColor(color: Color) {
     val activity = context as? Activity ?: return
     DisposableEffect(activity, view, color) {
         val window = activity.window
-        val previousStatusBarColor = window.statusBarColor
+        val previousStatusBarColor = window.setLegacyStatusBarColor(color.toArgb())
         val controller = WindowCompat.getInsetsController(window, view)
         val previousLightStatusBars = controller.isAppearanceLightStatusBars
 
-        window.statusBarColor = color.toArgb()
         controller.isAppearanceLightStatusBars = color.luminance() > 0.5f
 
         onDispose {
-            window.statusBarColor = previousStatusBarColor
+            window.restoreLegacyStatusBarColor(previousStatusBarColor)
             controller.isAppearanceLightStatusBars = previousLightStatusBars
         }
+    }
+}
+
+@Suppress("DEPRECATION")
+private fun Window.setLegacyStatusBarColor(color: Int): Int? {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) return null
+    return statusBarColor.also { statusBarColor = color }
+}
+
+@Suppress("DEPRECATION")
+private fun Window.restoreLegacyStatusBarColor(previousColor: Int?) {
+    if (previousColor != null) {
+        statusBarColor = previousColor
     }
 }
