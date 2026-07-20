@@ -151,7 +151,7 @@ internal fun StatisticsPage(
                     summaries = summaries,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height((240 + (summaries.size - 6).coerceAtLeast(0) * 6).coerceAtMost(288).dp),
+                        .height(donutChartHeight(summaries).dp),
                 )
             }
             items(summaries) { summary ->
@@ -1181,6 +1181,24 @@ private fun List<MonthlyChartPoint>.indexOfMonth(month: YearMonth): Int? {
     return if (index >= 0) index else indices.maxByOrNull { this[it].value }
 }
 
+private fun donutChartHeight(summaries: List<CategorySummary>): Int {
+    var leftCount = 0
+    var rightCount = 0
+    var startAngle = -90f
+    summaries.forEach { summary ->
+        val sweep = summary.percent * 360f
+        val radians = (startAngle + sweep / 2f).toRadians()
+        if (cos(radians) >= 0f) {
+            rightCount += 1
+        } else {
+            leftCount += 1
+        }
+        startAngle += sweep
+    }
+    val maxSideCount = max(leftCount, rightCount)
+    return (240 + (maxSideCount - 4).coerceAtLeast(0) * 24).coerceAtMost(360)
+}
+
 private fun adjustDonutLabels(
     labels: List<DonutLabel>,
     minY: Float,
@@ -1196,26 +1214,39 @@ private fun adjustDonutLabels(
 
             val availableSpacing = ((maxY - minY) / (sorted.size - 1)).coerceAtLeast(0f)
             val actualSpacing = min(spacing, availableSpacing)
-            val adjusted = sorted.map { it.desiredY.coerceIn(minY, maxY) }.toMutableList()
+            val levels = FloatArray(sorted.size)
+            val weights = IntArray(sorted.size)
+            var blockCount = 0
 
-            for (index in 1..adjusted.lastIndex) {
-                adjusted[index] = max(adjusted[index], adjusted[index - 1] + actualSpacing)
-            }
-            if (adjusted.last() > maxY) {
-                adjusted[adjusted.lastIndex] = maxY
-                for (index in adjusted.lastIndex - 1 downTo 0) {
-                    adjusted[index] = min(adjusted[index], adjusted[index + 1] - actualSpacing)
+            sorted.forEachIndexed { index, label ->
+                levels[blockCount] = label.desiredY.coerceIn(minY, maxY) - index * actualSpacing
+                weights[blockCount] = 1
+                blockCount += 1
+                while (blockCount >= 2 && levels[blockCount - 2] > levels[blockCount - 1]) {
+                    val leftWeight = weights[blockCount - 2]
+                    val rightWeight = weights[blockCount - 1]
+                    levels[blockCount - 2] = (
+                        levels[blockCount - 2] * leftWeight + levels[blockCount - 1] * rightWeight
+                    ) / (leftWeight + rightWeight)
+                    weights[blockCount - 2] = leftWeight + rightWeight
+                    blockCount -= 1
                 }
             }
-            if (adjusted.first() < minY) {
-                adjusted[0] = minY
-                for (index in 1..adjusted.lastIndex) {
-                    adjusted[index] = max(adjusted[index], adjusted[index - 1] + actualSpacing)
+
+            val minLevel = minY
+            val maxLevel = maxY - (sorted.size - 1) * actualSpacing
+            val fittedLevels = FloatArray(sorted.size)
+            var itemIndex = 0
+            for (blockIndex in 0 until blockCount) {
+                val level = levels[blockIndex].coerceIn(minLevel, maxLevel)
+                repeat(weights[blockIndex]) {
+                    fittedLevels[itemIndex] = level
+                    itemIndex += 1
                 }
             }
 
             sorted.mapIndexed { index, label ->
-                label.copy(adjustedY = adjusted[index].coerceIn(minY, maxY))
+                label.copy(adjustedY = fittedLevels[index] + index * actualSpacing)
             }
         }
 
