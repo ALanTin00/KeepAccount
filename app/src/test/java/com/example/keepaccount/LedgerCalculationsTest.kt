@@ -2,7 +2,9 @@ package com.example.keepaccount
 
 import com.example.keepaccount.data.BillRecordEntity
 import com.example.keepaccount.data.BillType
+import com.example.keepaccount.ui.CategorySummary
 import com.example.keepaccount.ui.categorySummaries
+import com.example.keepaccount.ui.donutDisplayPercents
 import com.example.keepaccount.ui.expenseTotal
 import com.example.keepaccount.ui.groupsByDay
 import com.example.keepaccount.ui.incomeTotal
@@ -61,6 +63,37 @@ class LedgerCalculationsTest {
         assertEquals(3_000f / 3_500f, summaries[0].percent)
         assertEquals(2, summaries[1].category)
         assertEquals(500, summaries[1].amountCents)
+    }
+
+    @Test
+    fun donutDisplayPercents_givesSmallCategoriesFixedFivePercentSlices() {
+        val summaries = listOf(
+            CategorySummary(category = 1, amountCents = 9_000, percent = 0.90f),
+            CategorySummary(category = 2, amountCents = 500, percent = 0.05f),
+            CategorySummary(category = 3, amountCents = 300, percent = 0.03f),
+            CategorySummary(category = 4, amountCents = 200, percent = 0.02f),
+        )
+
+        val displayPercents = donutDisplayPercents(summaries)
+
+        assertEquals(0.85f, displayPercents[0], 0.0001f)
+        assertEquals(0.05f, displayPercents[1], 0.0001f)
+        assertEquals(0.05f, displayPercents[2], 0.0001f)
+        assertEquals(0.05f, displayPercents[3], 0.0001f)
+        assertEquals(1f, displayPercents.sum(), 0.0001f)
+    }
+
+    @Test
+    fun donutDisplayPercents_keepsNormalCategoriesProportional() {
+        val summaries = listOf(
+            CategorySummary(category = 1, amountCents = 600, percent = 0.60f),
+            CategorySummary(category = 2, amountCents = 400, percent = 0.40f),
+        )
+
+        val displayPercents = donutDisplayPercents(summaries)
+
+        assertEquals(0.60f, displayPercents[0], 0.0001f)
+        assertEquals(0.40f, displayPercents[1], 0.0001f)
     }
 
     @Test

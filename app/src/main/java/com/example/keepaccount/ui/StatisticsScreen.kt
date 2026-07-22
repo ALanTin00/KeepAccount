@@ -311,6 +311,7 @@ internal fun StatisticsSectionTitle(text: String) {
 internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = Modifier) {
     val colors = chartColors()
     val context = LocalContext.current
+    val displayPercents = remember(summaries) { donutDisplayPercents(summaries) }
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             if (summaries.isEmpty()) return@Canvas
@@ -342,8 +343,8 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
             val labels = mutableListOf<DonutLabel>()
             var startAngle = -90f
 
-            summaries.forEach { item ->
-                val sweep = item.percent * 360f
+            summaries.forEachIndexed { index, item ->
+                val sweep = displayPercents[index] * 360f
                 val midAngle = startAngle + sweep / 2f
                 val radians = midAngle.toRadians()
                 val side = if (cos(radians) >= 0f) DonutLabelSide.RIGHT else DonutLabelSide.LEFT
@@ -427,7 +428,7 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
 
             startAngle = -90f
             summaries.forEachIndexed { index, item ->
-                val sweep = item.percent * 360f
+                val sweep = displayPercents[index] * 360f
                 val gapAngle = min(1.2f, sweep * 0.15f)
                 drawArc(
                     color = colors[index % colors.size],
@@ -1181,12 +1182,38 @@ private fun List<MonthlyChartPoint>.indexOfMonth(month: YearMonth): Int? {
     return if (index >= 0) index else indices.maxByOrNull { this[it].value }
 }
 
+internal fun donutDisplayPercents(summaries: List<CategorySummary>): List<Float> {
+    if (summaries.isEmpty()) return emptyList()
+
+    val smallCategoryCount = summaries.count { it.percent > 0f && it.percent <= MIN_VISIBLE_DONUT_PERCENT }
+    val reservedSmallPercent = smallCategoryCount * MIN_VISIBLE_DONUT_PERCENT
+    val largeCategoryTotal = summaries
+        .filter { it.percent > MIN_VISIBLE_DONUT_PERCENT }
+        .sumOf { it.percent.toDouble() }
+        .toFloat()
+    val remainingLargePercent = (1f - reservedSmallPercent).coerceAtLeast(0f)
+
+    if (largeCategoryTotal <= 0f) {
+        val equalPercent = 1f / summaries.size
+        return List(summaries.size) { equalPercent }
+    }
+
+    return summaries.map { summary ->
+        when {
+            summary.percent <= 0f -> 0f
+            summary.percent <= MIN_VISIBLE_DONUT_PERCENT -> MIN_VISIBLE_DONUT_PERCENT
+            else -> summary.percent / largeCategoryTotal * remainingLargePercent
+        }
+    }
+}
+
 private fun donutChartHeight(summaries: List<CategorySummary>): Int {
+    val displayPercents = donutDisplayPercents(summaries)
     var leftCount = 0
     var rightCount = 0
     var startAngle = -90f
-    summaries.forEach { summary ->
-        val sweep = summary.percent * 360f
+    displayPercents.forEach { displayPercent ->
+        val sweep = displayPercent * 360f
         val radians = (startAngle + sweep / 2f).toRadians()
         if (cos(radians) >= 0f) {
             rightCount += 1
@@ -1293,6 +1320,7 @@ private fun Color.toArgbInt(): Int = android.graphics.Color.argb(
     (blue * 255).roundToInt().coerceIn(0, 255),
 )
 
+private const val MIN_VISIBLE_DONUT_PERCENT = 0.05f
 private const val MONTHLY_RANKING_PREVIEW_LIMIT = 10
 private const val MONTHLY_COMPARISON_MONTH_COUNT = 7
 private const val DEFAULT_BAR_HORIZONTAL_HIT_SCALE = 0f
