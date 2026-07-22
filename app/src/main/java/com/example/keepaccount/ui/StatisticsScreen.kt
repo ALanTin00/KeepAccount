@@ -329,11 +329,7 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
             val horizontalLength = 8.dp.toPx()
             val textGap = 4.dp.toPx()
             val centerGap = 6.dp.toPx()
-            val maxLabelWidth = min(
-                100.dp.toPx(),
-                (size.width / 2f - outerRadius - edgePadding - bendGap - horizontalLength - textGap)
-                    .coerceAtLeast(24.dp.toPx()),
-            )
+
             val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 textSize = 11.dp.toPx()
                 color = Color(0xFF727875).toArgbInt()
@@ -348,15 +344,9 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
                 val midAngle = startAngle + sweep / 2f
                 val radians = midAngle.toRadians()
                 val side = if (cos(radians) >= 0f) DonutLabelSide.RIGHT else DonutLabelSide.LEFT
-                val labelText = buildDonutLabelText(
+                labels += DonutLabel(
                     categoryName = context.localizedCategoryName(item.category),
                     percent = item.percent,
-                    maxWidth = maxLabelWidth,
-                    paint = textPaint,
-                )
-                labels += DonutLabel(
-                    text = labelText,
-                    textWidth = textPaint.measureText(labelText),
                     anchor = Offset(
                         x = center.x + cos(radians) * outerRadius,
                         y = center.y + sin(radians) * outerRadius,
@@ -394,13 +384,26 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
                     x = bendPoint.x + sideDirection * horizontalLength,
                     y = label.adjustedY,
                 )
+                val availableTextWidth = if (label.side == DonutLabelSide.RIGHT) {
+                    size.width - edgePadding - lineEnd.x - textGap
+                } else {
+                    lineEnd.x - textGap - edgePadding
+                }
+                val text = buildDonutLabelText(
+                    categoryName = label.categoryName,
+                    percent = label.percent,
+                    maxWidth = availableTextWidth.coerceAtLeast(1f),
+                    paint = textPaint,
+                )
+                val textWidth = textPaint.measureText(text)
                 val desiredTextX = if (label.side == DonutLabelSide.RIGHT) {
                     lineEnd.x + textGap
                 } else {
-                    lineEnd.x - textGap - label.textWidth
+                    lineEnd.x - textGap - textWidth
                 }
-                val maxTextX = (size.width - edgePadding - label.textWidth).coerceAtLeast(edgePadding)
+                val maxTextX = (size.width - edgePadding - textWidth).coerceAtLeast(edgePadding)
                 return DonutLabelLayout(
+                    text = text,
                     bendPoint = bendPoint,
                     lineEnd = lineEnd,
                     textX = desiredTextX.coerceIn(edgePadding, maxTextX),
@@ -408,8 +411,8 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
             }
 
             // Leaders stay behind the donut, so collision routing can never show inside it.
-            adjustedLabels.forEach { label ->
-                val layout = labelLayout(label)
+            val positionedLabels = adjustedLabels.map { label -> label to labelLayout(label) }
+            positionedLabels.forEach { (label, layout) ->
                 drawLine(
                     color = lineColor,
                     start = label.anchor,
@@ -444,10 +447,9 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
             drawCircle(color = Color.White, radius = innerRadius, center = center)
 
             val baselineOffset = -(textPaint.ascent() + textPaint.descent()) / 2f
-            adjustedLabels.forEach { label ->
-                val layout = labelLayout(label)
+            positionedLabels.forEach { (label, layout) ->
                 drawContext.canvas.nativeCanvas.drawText(
-                    label.text,
+                    layout.text,
                     layout.textX,
                     label.adjustedY + baselineOffset,
                     textPaint,
@@ -459,6 +461,7 @@ internal fun DonutChart(summaries: List<CategorySummary>, modifier: Modifier = M
         }
     }
 }
+
 @Composable
 internal fun CategorySummaryRow(
     summary: CategorySummary,
@@ -1119,8 +1122,8 @@ private data class ChartTooltipHitBox(
 }
 
 private data class DonutLabel(
-    val text: String,
-    val textWidth: Float,
+    val categoryName: String,
+    val percent: Float,
     val anchor: Offset,
     val desiredY: Float,
     val side: DonutLabelSide,
@@ -1128,6 +1131,7 @@ private data class DonutLabel(
 )
 
 private data class DonutLabelLayout(
+    val text: String,
     val bendPoint: Offset,
     val lineEnd: Offset,
     val textX: Float,
